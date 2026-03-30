@@ -1,11 +1,26 @@
-.DS_Store
-.terraform/
-.terraform.lock.hcl
-terraform.tfstate
-terraform.tfstate.backup
-*.tfvars
-*.tfstate
-*.tfstate.*
+# Python
 __pycache__/
+*.pyc
 .pytest_cache/
 .venv/
+venv/
+
+# Environment files
+.env
+.env.*
+
+# Terraform local files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+infra/terraform/envs/dev/terraform.tfvars
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
