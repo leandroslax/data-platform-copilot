@@ -72,6 +72,57 @@ def test_get_tables_lists_schemas_then_tables(monkeypatch) -> None:
     ]
 
 
+def test_get_table_returns_table_detail(monkeypatch) -> None:
+    client = DatabricksClient()
+    client.host = "https://example.cloud.databricks.com"
+    client.token = "token"
+    client.catalog = "samples"
+
+    def fake_get(path: str, params=None):
+        assert path == "/api/2.1/unity-catalog/tables/samples.tpch.orders"
+        return {
+            "full_name": "samples.tpch.orders",
+            "catalog_name": "samples",
+            "schema_name": "tpch",
+            "name": "orders",
+            "table_type": "MANAGED",
+            "comment": "Orders",
+            "owner": "System user",
+            "columns": [
+                {
+                    "name": "o_orderkey",
+                    "type_text": "bigint",
+                    "type_json": '{"name":"o_orderkey"}',
+                    "comment": "Order key",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(client, "_get", fake_get)
+
+    table = client.get_table("samples.tpch.orders")
+
+    assert table == {
+        "dataset_id": "samples.tpch.orders",
+        "name": "samples.tpch.orders",
+        "catalog": "samples",
+        "schema": "tpch",
+        "table": "orders",
+        "type": "managed",
+        "description": "Orders",
+        "owner": "System user",
+        "columns": [
+            {
+                "name": "o_orderkey",
+                "data_type": "bigint",
+                "nullable": True,
+                "description": "Order key",
+            }
+        ],
+        "documentation": [],
+    }
+
+
 def test_get_tables_returns_empty_on_http_error(monkeypatch) -> None:
     client = DatabricksClient()
     client.host = "https://example.cloud.databricks.com"

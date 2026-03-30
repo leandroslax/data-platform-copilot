@@ -47,6 +47,13 @@ def list_datasets() -> List[Dict[str, Any]]:
 
 
 def find_dataset_by_id(dataset_id: str) -> Optional[Dict[str, Any]]:
+    client = DatabricksClient()
+
+    if client.is_configured():
+        dataset = client.get_table(dataset_id)
+        if dataset:
+            return _normalize_dataset_record(dataset)
+
     for dataset in _get_dataset_source():
         if dataset["dataset_id"] == dataset_id:
             return dataset

@@ -72,26 +72,42 @@ def test_list_datasets_uses_databricks_when_configured(monkeypatch) -> None:
     ]
 
 
-def test_find_dataset_by_id_reads_from_databricks_when_configured(monkeypatch) -> None:
+def test_find_dataset_by_id_reads_detail_from_databricks_when_configured(monkeypatch) -> None:
     class StubDatabricksClient:
         def is_configured(self) -> bool:
             return True
 
+        def get_table(self, dataset_id: str):
+            if dataset_id != "samples.tpch.orders":
+                return None
+
+            return {
+                "dataset_id": "samples.tpch.orders",
+                "name": "samples.tpch.orders",
+                "catalog": "samples",
+                "schema": "tpch",
+                "table": "orders",
+                "type": "managed",
+                "description": "Orders table",
+                "owner": "System user",
+                "columns": [
+                    {
+                        "name": "o_orderkey",
+                        "data_type": "bigint",
+                        "nullable": True,
+                        "description": None,
+                    }
+                ],
+                "documentation": [],
+            }
+
         def get_tables(self):
-            return [
-                {
-                    "dataset_id": "analytics.silver.customers",
-                    "name": "analytics.silver.customers",
-                    "catalog": "analytics",
-                    "schema": "silver",
-                    "table": "customers",
-                    "type": "view",
-                }
-            ]
+            return []
 
     monkeypatch.setattr(dataset_repository, "DatabricksClient", StubDatabricksClient)
 
-    dataset = dataset_repository.find_dataset_by_id("analytics.silver.customers")
+    dataset = dataset_repository.find_dataset_by_id("samples.tpch.orders")
 
     assert dataset is not None
-    assert dataset["type"] == "view"
+    assert dataset["dataset_id"] == "samples.tpch.orders"
+    assert dataset["columns"][0]["name"] == "o_orderkey"

@@ -68,30 +68,64 @@ class DatabricksClient:
                 continue
 
             for table in tables_response.get("tables", []):
-                full_name = table.get("full_name") or ""
-                catalog = table.get("catalog_name") or self.catalog
-                table_schema = table.get("schema_name") or schema_name
-                table_name = table.get("name")
-
-                if not full_name and catalog and table_schema and table_name:
-                    full_name = f"{catalog}.{table_schema}.{table_name}"
-
-                normalized_tables.append(
-                    {
-                        "dataset_id": full_name,
-                        "name": full_name,
-                        "catalog": catalog,
-                        "schema": table_schema,
-                        "table": table_name,
-                        "type": (table.get("table_type") or "table").lower(),
-                        "description": table.get("comment"),
-                        "owner": table.get("owner"),
-                        "columns": [],
-                        "documentation": [],
-                    }
-                )
+                normalized_tables.append(self._normalize_table(table, schema_name))
 
         return normalized_tables
+
+    def get_table(self, dataset_id: str) -> Optional[Dict]:
+        if not self.is_configured():
+            return None
+
+        parts = dataset_id.split(".")
+        if len(parts) != 3:
+            return None
+
+        catalog_name, schema_name, table_name = parts
+
+        try:
+            response = self._get(
+                f"/api/2.1/unity-catalog/tables/{catalog_name}.{schema_name}.{table_name}"
+            )
+        except (HTTPError, URLError):
+            return None
+
+        if not response:
+            return None
+
+        return self._normalize_table(response, schema_name)
+
+    def _normalize_table(self, table: Dict, fallback_schema_name: Optional[str] = None) -> Dict:
+        full_name = table.get("full_name") or ""
+        catalog = table.get("catalog_name") or self.catalog
+        schema_name = table.get("schema_name") or fallback_schema_name
+        table_name = table.get("name")
+
+        if not full_name and catalog and schema_name and table_name:
+            full_name = f"{catalog}.{schema_name}.{table_name}"
+
+        columns = []
+        for column in table.get("columns", []):
+            columns.append(
+                {
+                    "name": column.get("name"),
+                    "data_type": column.get("type_text") or column.get("type_name"),
+                    "nullable": column.get("type_json") is not None,
+                    "description": column.get("comment"),
+                }
+            )
+
+        return {
+            "dataset_id": full_name,
+            "name": full_name,
+            "catalog": catalog,
+            "schema": schema_name,
+            "table": table_name,
+            "type": (table.get("table_type") or "table").lower(),
+            "description": table.get("comment"),
+            "owner": table.get("owner"),
+            "columns": columns,
+            "documentation": [],
+        }
 
     def get_jobs(self) -> List[Dict]:
         if not self.is_configured():
