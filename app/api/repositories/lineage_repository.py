@@ -30,7 +30,9 @@ def _get_lineage_source() -> List[Dict[str, Any]]:
     client = DatabricksClient()
 
     if client.is_configured():
-        return [_normalize_lineage_record(lineage) for lineage in client.get_lineage()]
+        lineage_records = client.get_lineage()
+        if lineage_records:
+            return [_normalize_lineage_record(lineage) for lineage in lineage_records]
 
     return [_normalize_lineage_record(lineage) for lineage in LINEAGE.values()]
 
