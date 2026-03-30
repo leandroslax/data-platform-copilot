@@ -45,3 +45,26 @@ jobs:
           test -f docs/mvp.md
           test -f docs/architecture.md
           test -f docs/solution-architecture.md
+          test -f docs/data-model.md
+          test -f docs/api-contract.md
+
+  api:
+    name: API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run API tests
+        run: python -m pytest tests/api
