@@ -77,13 +77,45 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        return []
+        response = self._get("/api/2.1/jobs/list")
+        jobs = response.get("jobs", [])
+        normalized_jobs: List[Dict] = []
+
+        for job in jobs:
+            settings_payload = job.get("settings", {})
+            normalized_jobs.append(
+                {
+                    "job_id": str(job.get("job_id", "")),
+                    "job_name": settings_payload.get("name") or str(job.get("job_id", "")),
+                    "status": "active",
+                }
+            )
+
+        return normalized_jobs
 
     def get_job_runs(self) -> List[Dict]:
         if not self.is_configured():
             return []
 
-        return []
+        response = self._get("/api/2.1/jobs/runs/list", params={"limit": "25"})
+        runs = response.get("runs", [])
+        normalized_runs: List[Dict] = []
+
+        for run in runs:
+            state = run.get("state", {})
+            normalized_runs.append(
+                {
+                    "run_id": str(run.get("run_id", "")),
+                    "job_id": str(run.get("job_id", "")),
+                    "lifecycle_state": state.get("life_cycle_state"),
+                    "result_state": state.get("result_state"),
+                    "state_message": state.get("state_message"),
+                    "start_time": str(run.get("start_time", "")),
+                    "end_time": str(run.get("end_time", "")),
+                }
+            )
+
+        return normalized_runs
 
     def get_lineage(self) -> List[Dict]:
         if not self.is_configured():

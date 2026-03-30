@@ -92,3 +92,76 @@ def test_get_tables_builds_full_name_when_missing(monkeypatch) -> None:
             "documentation": [],
         }
     ]
+
+
+def test_get_jobs_calls_databricks_jobs_api(monkeypatch) -> None:
+    client = DatabricksClient()
+    client.host = "https://example.cloud.databricks.com"
+    client.token = "token"
+
+    def fake_get(path: str, params=None):
+        assert path == "/api/2.1/jobs/list"
+        assert params is None
+        return {
+            "jobs": [
+                {
+                    "job_id": 12345,
+                    "settings": {
+                        "name": "sales_orders_pipeline",
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(client, "_get", fake_get)
+
+    jobs = client.get_jobs()
+
+    assert jobs == [
+        {
+            "job_id": "12345",
+            "job_name": "sales_orders_pipeline",
+            "status": "active",
+        }
+    ]
+
+
+def test_get_job_runs_calls_databricks_runs_api(monkeypatch) -> None:
+    client = DatabricksClient()
+    client.host = "https://example.cloud.databricks.com"
+    client.token = "token"
+
+    def fake_get(path: str, params=None):
+        assert path == "/api/2.1/jobs/runs/list"
+        assert params == {"limit": "25"}
+        return {
+            "runs": [
+                {
+                    "run_id": 98765,
+                    "job_id": 12345,
+                    "start_time": 1711792800000,
+                    "end_time": 1711793100000,
+                    "state": {
+                        "life_cycle_state": "TERMINATED",
+                        "result_state": "FAILED",
+                        "state_message": "Cluster terminated before task completion",
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(client, "_get", fake_get)
+
+    runs = client.get_job_runs()
+
+    assert runs == [
+        {
+            "run_id": "98765",
+            "job_id": "12345",
+            "lifecycle_state": "TERMINATED",
+            "result_state": "FAILED",
+            "state_message": "Cluster terminated before task completion",
+            "start_time": "1711792800000",
+            "end_time": "1711793100000",
+        }
+    ]
