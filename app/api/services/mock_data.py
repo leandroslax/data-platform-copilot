@@ -66,3 +66,32 @@ DATASETS = [
         ],
     },
 ]
+
+LINEAGE = {
+    "main.sales.orders": {
+        "dataset_id": "main.sales.orders",
+        "upstream": [
+            "main.raw.orders_source",
+            "main.raw.customers_source"
+        ],
+        "downstream": [
+            "main.gold.sales_kpis",
+            "main.analytics.orders_dashboard"
+        ],
+        "related_jobs": [
+            "sales_orders_pipeline"
+        ],
+    },
+    "main.finance.invoices": {
+        "dataset_id": "main.finance.invoices",
+        "upstream": [
+            "main.raw.invoices_source"
+        ],
+        "downstream": [
+            "main.gold.finance_reconciliation"
+        ],
+        "related_jobs": [
+            "finance_invoices_pipeline"
+        ],
+    },
+}
