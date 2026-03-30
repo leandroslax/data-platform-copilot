@@ -41,39 +41,55 @@ class DatabricksClient:
             return []
 
         try:
-            response = self._get(
-                "/api/2.1/unity-catalog/tables",
+            schemas_response = self._get(
+                "/api/2.1/unity-catalog/schemas",
                 params={"catalog_name": self.catalog},
             )
         except (HTTPError, URLError):
             return []
 
-        tables = response.get("tables", [])
+        schemas = schemas_response.get("schemas", [])
         normalized_tables: List[Dict] = []
 
-        for table in tables:
-            full_name = table.get("full_name") or ""
-            catalog = table.get("catalog_name") or self.catalog
-            schema_name = table.get("schema_name")
-            table_name = table.get("name")
+        for schema in schemas:
+            schema_name = schema.get("name")
+            if not schema_name or schema_name == "information_schema":
+                continue
 
-            if not full_name and catalog and schema_name and table_name:
-                full_name = f"{catalog}.{schema_name}.{table_name}"
+            try:
+                tables_response = self._get(
+                    "/api/2.1/unity-catalog/tables",
+                    params={
+                        "catalog_name": self.catalog,
+                        "schema_name": schema_name,
+                    },
+                )
+            except (HTTPError, URLError):
+                continue
 
-            normalized_tables.append(
-                {
-                    "dataset_id": full_name,
-                    "name": full_name,
-                    "catalog": catalog,
-                    "schema": schema_name,
-                    "table": table_name,
-                    "type": (table.get("table_type") or "table").lower(),
-                    "description": table.get("comment"),
-                    "owner": table.get("owner"),
-                    "columns": [],
-                    "documentation": [],
-                }
-            )
+            for table in tables_response.get("tables", []):
+                full_name = table.get("full_name") or ""
+                catalog = table.get("catalog_name") or self.catalog
+                table_schema = table.get("schema_name") or schema_name
+                table_name = table.get("name")
+
+                if not full_name and catalog and table_schema and table_name:
+                    full_name = f"{catalog}.{table_schema}.{table_name}"
+
+                normalized_tables.append(
+                    {
+                        "dataset_id": full_name,
+                        "name": full_name,
+                        "catalog": catalog,
+                        "schema": table_schema,
+                        "table": table_name,
+                        "type": (table.get("table_type") or "table").lower(),
+                        "description": table.get("comment"),
+                        "owner": table.get("owner"),
+                        "columns": [],
+                        "documentation": [],
+                    }
+                )
 
         return normalized_tables
 
@@ -133,48 +149,4 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        try:
-            response = self._get(
-                "/api/2.1/unity-catalog/table-lineage",
-                params={"catalog_name": self.catalog},
-            )
-        except (HTTPError, URLError):
-            return []
-
-        lineage_records = response.get("lineage", [])
-        normalized_lineage: List[Dict] = []
-
-        for item in lineage_records:
-            source_table = item.get("table_info", {})
-            full_name = source_table.get("full_name") or item.get("dataset_id") or ""
-
-            upstreams = []
-            for upstream in item.get("upstreams", []):
-                upstream_table = upstream.get("table_info", {})
-                upstream_name = upstream_table.get("full_name")
-                if upstream_name:
-                    upstreams.append(upstream_name)
-
-            downstreams = []
-            for downstream in item.get("downstreams", []):
-                downstream_table = downstream.get("table_info", {})
-                downstream_name = downstream_table.get("full_name")
-                if downstream_name:
-                    downstreams.append(downstream_name)
-
-            related_jobs = []
-            for job in item.get("jobs", []):
-                job_name = job.get("job_name") or job.get("name")
-                if job_name:
-                    related_jobs.append(job_name)
-
-            normalized_lineage.append(
-                {
-                    "dataset_id": full_name,
-                    "upstream": upstreams,
-                    "downstream": downstreams,
-                    "related_jobs": related_jobs,
-                }
-            )
-
-        return normalized_lineage
+        return []

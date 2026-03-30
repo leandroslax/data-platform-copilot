@@ -88,7 +88,7 @@ module "cloud_run" {
   env_vars = {
     APP_ENV            = "dev"
     DATABRICKS_HOST    = "https://8259560804281928.8.gcp.databricks.com"
-    DATABRICKS_CATALOG = "main"
+    DATABRICKS_CATALOG = "workspace"
   }
 
   secret_env_vars = {

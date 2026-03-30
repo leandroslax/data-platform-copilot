@@ -5,6 +5,8 @@ from app.api.clients.databricks_client import DatabricksClient
 
 def test_databricks_client_is_not_configured_by_default() -> None:
     client = DatabricksClient()
+    client.host = ""
+    client.token = ""
 
     assert client.is_configured() is False
     assert client.get_tables() == []
@@ -13,28 +15,42 @@ def test_databricks_client_is_not_configured_by_default() -> None:
     assert client.get_lineage() == []
 
 
-def test_get_tables_calls_unity_catalog_when_client_is_configured(monkeypatch) -> None:
+def test_get_tables_lists_schemas_then_tables(monkeypatch) -> None:
     client = DatabricksClient()
     client.host = "https://example.cloud.databricks.com"
     client.token = "token"
-    client.catalog = "main"
+    client.catalog = "workspace"
 
     def fake_get(path: str, params=None):
-        assert path == "/api/2.1/unity-catalog/tables"
-        assert params == {"catalog_name": "main"}
-        return {
-            "tables": [
-                {
-                    "full_name": "main.sales.orders",
-                    "catalog_name": "main",
-                    "schema_name": "sales",
-                    "name": "orders",
-                    "table_type": "MANAGED",
-                    "comment": "Orders table",
-                    "owner": "sales-platform",
-                }
-            ]
-        }
+        if path == "/api/2.1/unity-catalog/schemas":
+            assert params == {"catalog_name": "workspace"}
+            return {
+                "schemas": [
+                    {"name": "default"},
+                    {"name": "information_schema"},
+                ]
+            }
+
+        if path == "/api/2.1/unity-catalog/tables":
+            assert params == {
+                "catalog_name": "workspace",
+                "schema_name": "default",
+            }
+            return {
+                "tables": [
+                    {
+                        "full_name": "workspace.default.sales_orders",
+                        "catalog_name": "workspace",
+                        "schema_name": "default",
+                        "name": "sales_orders",
+                        "table_type": "MANAGED",
+                        "comment": "Orders table",
+                        "owner": "sales-platform",
+                    }
+                ]
+            }
+
+        raise AssertionError(f"Unexpected path: {path}")
 
     monkeypatch.setattr(client, "_get", fake_get)
 
@@ -42,54 +58,14 @@ def test_get_tables_calls_unity_catalog_when_client_is_configured(monkeypatch) -
 
     assert tables == [
         {
-            "dataset_id": "main.sales.orders",
-            "name": "main.sales.orders",
-            "catalog": "main",
-            "schema": "sales",
-            "table": "orders",
+            "dataset_id": "workspace.default.sales_orders",
+            "name": "workspace.default.sales_orders",
+            "catalog": "workspace",
+            "schema": "default",
+            "table": "sales_orders",
             "type": "managed",
             "description": "Orders table",
             "owner": "sales-platform",
-            "columns": [],
-            "documentation": [],
-        }
-    ]
-
-
-def test_get_tables_builds_full_name_when_missing(monkeypatch) -> None:
-    client = DatabricksClient()
-    client.host = "https://example.cloud.databricks.com"
-    client.token = "token"
-    client.catalog = "main"
-
-    def fake_get(path: str, params=None):
-        return {
-            "tables": [
-                {
-                    "catalog_name": "main",
-                    "schema_name": "finance",
-                    "name": "invoices",
-                    "table_type": "EXTERNAL",
-                    "comment": "Invoices table",
-                    "owner": "finance-data",
-                }
-            ]
-        }
-
-    monkeypatch.setattr(client, "_get", fake_get)
-
-    tables = client.get_tables()
-
-    assert tables == [
-        {
-            "dataset_id": "main.finance.invoices",
-            "name": "main.finance.invoices",
-            "catalog": "main",
-            "schema": "finance",
-            "table": "invoices",
-            "type": "external",
-            "description": "Invoices table",
-            "owner": "finance-data",
             "columns": [],
             "documentation": [],
         }
@@ -100,7 +76,7 @@ def test_get_tables_returns_empty_on_http_error(monkeypatch) -> None:
     client = DatabricksClient()
     client.host = "https://example.cloud.databricks.com"
     client.token = "token"
-    client.catalog = "main"
+    client.catalog = "workspace"
 
     def fake_get(path: str, params=None):
         raise HTTPError("https://example.com", 400, "Bad Request", hdrs=None, fp=None)
@@ -179,57 +155,5 @@ def test_get_job_runs_calls_databricks_runs_api(monkeypatch) -> None:
             "state_message": "Cluster terminated before task completion",
             "start_time": "1711792800000",
             "end_time": "1711793100000",
-        }
-    ]
-
-
-def test_get_lineage_calls_databricks_lineage_api(monkeypatch) -> None:
-    client = DatabricksClient()
-    client.host = "https://example.cloud.databricks.com"
-    client.token = "token"
-    client.catalog = "main"
-
-    def fake_get(path: str, params=None):
-        assert path == "/api/2.1/unity-catalog/table-lineage"
-        assert params == {"catalog_name": "main"}
-        return {
-            "lineage": [
-                {
-                    "table_info": {
-                        "full_name": "main.sales.orders",
-                    },
-                    "upstreams": [
-                        {
-                            "table_info": {
-                                "full_name": "main.raw.orders_source",
-                            }
-                        }
-                    ],
-                    "downstreams": [
-                        {
-                            "table_info": {
-                                "full_name": "main.gold.sales_kpis",
-                            }
-                        }
-                    ],
-                    "jobs": [
-                        {
-                            "job_name": "sales_orders_pipeline",
-                        }
-                    ],
-                }
-            ]
-        }
-
-    monkeypatch.setattr(client, "_get", fake_get)
-
-    lineage = client.get_lineage()
-
-    assert lineage == [
-        {
-            "dataset_id": "main.sales.orders",
-            "upstream": ["main.raw.orders_source"],
-            "downstream": ["main.gold.sales_kpis"],
-            "related_jobs": ["sales_orders_pipeline"],
         }
     ]

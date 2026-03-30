@@ -1,4 +1,9 @@
+import os
+
 from fastapi.testclient import TestClient
+
+os.environ["DATABRICKS_HOST"] = ""
+os.environ["DATABRICKS_TOKEN"] = ""
 
 from app.api.main import app
 
