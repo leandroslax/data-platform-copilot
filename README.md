@@ -56,21 +56,38 @@ See the detailed architecture in [docs/solution-architecture.md](docs/solution-a
     ├── ingestion/
     └── metadata/
 
+Backend Status
+The current FastAPI backend already exposes MVP endpoints for:
 
+datasets
+jobs
+lineage
+chat
+health
+Repository access follows a hybrid pattern:
 
-## Local Development
+use Databricks APIs when DATABRICKS_HOST and DATABRICKS_TOKEN are configured
+use local mock data when Databricks is not configured
+This hybrid behavior is already implemented for:
 
+dataset repository
+job repository
+lineage repository
+The DatabricksClient currently supports:
+
+Unity Catalog tables
+Databricks jobs
+Databricks job runs
+Databricks lineage
+Local Development
 Recommended local setup:
 
-- Python 3.11
-- Virtual environment in `.venv`
-
+Python 3.11
+Virtual environment in .venv
 Example:
 
-```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 python -m pytest
-
