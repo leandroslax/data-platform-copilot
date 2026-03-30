@@ -47,6 +47,8 @@ jobs:
           test -f docs/solution-architecture.md
           test -f docs/data-model.md
           test -f docs/api-contract.md
+          test -f .env.example
+          test -f Dockerfile
 
   api:
     name: API Tests
@@ -68,3 +70,14 @@ jobs:
 
       - name: Run API tests
         run: python -m pytest tests/api
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker build -t data-platform-copilot-api:ci .
