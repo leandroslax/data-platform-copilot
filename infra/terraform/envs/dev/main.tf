@@ -28,6 +28,7 @@ module "project_services" {
   project_id = var.project_id
   services = [
     "artifactregistry.googleapis.com",
+    "bigquery.googleapis.com",
     "cloudbuild.googleapis.com",
     "run.googleapis.com",
     "secretmanager.googleapis.com",
@@ -54,6 +55,37 @@ module "artifacts_bucket" {
   force_destroy = false
 }
 
+module "bronze_bucket" {
+  source = "../../modules/gcs_bucket"
+
+  project_id    = var.project_id
+  bucket_name   = "${var.project_id}-data-platform-copilot-bronze"
+  location      = var.bucket_location
+  labels        = local.common_labels
+  force_destroy = false
+}
+
+module "bigquery_datasets" {
+  source = "../../modules/bigquery_dataset"
+
+  project_id = var.project_id
+  location   = var.bigquery_location
+  datasets = {
+    bronze_novadrive = {
+      description = "Camada bronze com dados brutos do PostgreSQL Novadrive."
+      labels       = local.common_labels
+    }
+    silver_novadrive = {
+      description = "Camada silver com dados normalizados do dominio Novadrive."
+      labels       = local.common_labels
+    }
+    gold_novadrive = {
+      description = "Camada gold com visoes analiticas e prontas para consumo do copilot."
+      labels       = local.common_labels
+    }
+  }
+}
+
 module "runtime_service_account" {
   source = "../../modules/service_accounts"
 
@@ -61,6 +93,8 @@ module "runtime_service_account" {
   account_id   = "data-platform-copilot-api"
   display_name = "Data Platform Copilot API"
   roles = [
+    "roles/bigquery.dataViewer",
+    "roles/bigquery.jobUser",
     "roles/logging.logWriter",
     "roles/secretmanager.secretAccessor",
     "roles/storage.objectViewer",
@@ -86,9 +120,12 @@ module "cloud_run" {
   labels                = local.common_labels
 
   env_vars = {
-    APP_ENV            = "dev"
-    DATABRICKS_HOST    = "https://8259560804281928.8.gcp.databricks.com"
-    DATABRICKS_CATALOG = "samples"
+    APP_ENV                = "dev"
+    BIGQUERY_PROJECT_ID    = var.project_id
+    DATABRICKS_HOST        = "https://8259560804281928.8.gcp.databricks.com"
+    DATABRICKS_CATALOG     = "samples"
+    NOVADRIVE_GOLD_DATASET = "gold_novadrive"
+    NOVADRIVE_SILVER_DATASET = "silver_novadrive"
   }
 
   secret_env_vars = {
