@@ -8,6 +8,12 @@ os.environ["DATABRICKS_TOKEN"] = ""
 from app.api.main import app
 from app.api.schemas.datasets import DatasetColumn, DatasetDetailResponse
 from app.api.schemas.lineage import LineageResponse
+from app.api.schemas.novadrive import (
+    FaturamentoConcessionariaItem,
+    FaturamentoConcessionariaResponse,
+    PerformanceVendedorItem,
+    PerformanceVendedorResponse,
+)
 from app.api.services import chat_service
 
 client = TestClient(app)
@@ -128,6 +134,76 @@ def test_chat_answers_dataset_columns_question(monkeypatch) -> None:
             "label": "Metadados do dataset",
         }
     ]
+
+
+def test_chat_answers_novadrive_concessionaria_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "list_faturamento_por_concessionaria",
+        lambda limit: FaturamentoConcessionariaResponse(
+            items=[
+                FaturamentoConcessionariaItem(
+                    id_concessionarias=13,
+                    concessionaria="Concessionária NovaDrive Motors Belo Horizonte",
+                    cidade="Belo Horizonte",
+                    estado="Minas Gerais",
+                    sigla_estado="MG",
+                    total_vendas=134,
+                    faturamento_total=45565767.28,
+                    ticket_medio=340043.03,
+                )
+            ],
+            total=1,
+            limit=limit,
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Qual concessionaria mais faturou na Novadrive?"},
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert "Belo Horizonte" in payload["answer"]
+    assert payload["sources"][0]["id"] == "faturamento_por_concessionaria"
+
+
+def test_chat_answers_novadrive_vendedor_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "list_performance_vendedores",
+        lambda limit: PerformanceVendedorResponse(
+            items=[
+                PerformanceVendedorItem(
+                    id_vendedores=40,
+                    vendedor_nome="Luciana Freitas",
+                    id_concessionarias=19,
+                    concessionaria="Concessionária NovaDrive Motors Rio de Janeiro",
+                    cidade="Rio de Janeiro",
+                    estado="Rio de Janeiro",
+                    sigla_estado="RJ",
+                    total_vendas=64,
+                    faturamento_total=20889360.6,
+                    ticket_medio=326396.25,
+                )
+            ],
+            total=1,
+            limit=limit,
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Qual vendedor teve maior faturamento na Novadrive?"},
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert "Luciana Freitas" in payload["answer"]
+    assert payload["sources"][0]["id"] == "performance_vendedores"
 
 
 def test_chat_returns_fallback_when_context_is_missing() -> None:

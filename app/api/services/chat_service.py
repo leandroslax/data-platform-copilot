@@ -7,7 +7,10 @@ from app.api.schemas.chat import ChatResponse, ChatSource
 from app.api.services.dataset_service import get_dataset
 from app.api.services.job_service import get_job_incidents
 from app.api.services.lineage_service import get_lineage
-
+from app.api.services.novadrive_service import (
+    list_faturamento_por_concessionaria,
+    list_performance_vendedores,
+)
 
 STOPWORDS = {
     "a",
@@ -16,6 +19,8 @@ STOPWORDS = {
     "coluna",
     "colunas",
     "com",
+    "concessionaria",
+    "concessionarias",
     "da",
     "das",
     "dataset",
@@ -26,6 +31,8 @@ STOPWORDS = {
     "em",
     "existe",
     "existem",
+    "faturamento",
+    "job",
     "o",
     "os",
     "owner",
@@ -35,6 +42,12 @@ STOPWORDS = {
     "quem",
     "responsavel",
     "schema",
+    "ticket",
+    "vendedor",
+    "vendedores",
+    "vendeu",
+    "venderam",
+    "vendas",
 }
 
 DATASET_ID_PATTERN = re.compile(r"\b[a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_]+\b")
@@ -123,9 +136,82 @@ def _answers_about_job(question: str) -> bool:
     )
 
 
+def _answers_about_novadrive(question: str) -> bool:
+    normalized_question = question.lower()
+    return any(
+        keyword in normalized_question
+        for keyword in {
+            "concessionaria",
+            "concessionarias",
+            "faturamento",
+            "vendedor",
+            "vendedores",
+            "ticket medio",
+            "ticket",
+            "novadrive",
+            "melhor vendedor",
+            "mais faturou",
+            "performance",
+        }
+    )
+
+
+def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
+    normalized_question = question.lower()
+
+    if "concessionaria" in normalized_question or "concessionarias" in normalized_question:
+        ranking = list_faturamento_por_concessionaria(limit=5)
+        if not ranking.items:
+            return None
+
+        top = ranking.items[0]
+        return ChatResponse(
+            answer=(
+                f"A concessionaria com maior faturamento e {top.concessionaria}, em {top.cidade}-{top.sigla_estado}, "
+                f"com faturamento total de {top.faturamento_total:.2f}, {top.total_vendas} vendas e ticket medio de "
+                f"{top.ticket_medio:.2f}."
+            ),
+            sources=[
+                ChatSource(
+                    type="novadrive_gold",
+                    id="faturamento_por_concessionaria",
+                    label="Gold Novadrive - faturamento por concessionaria",
+                )
+            ],
+        )
+
+    if "vendedor" in normalized_question or "vendedores" in normalized_question or "performance" in normalized_question:
+        ranking = list_performance_vendedores(limit=5)
+        if not ranking.items:
+            return None
+
+        top = ranking.items[0]
+        return ChatResponse(
+            answer=(
+                f"O vendedor com maior faturamento e {top.vendedor_nome}, da {top.concessionaria}, "
+                f"com faturamento total de {top.faturamento_total:.2f}, {top.total_vendas} vendas e ticket medio de "
+                f"{top.ticket_medio:.2f}."
+            ),
+            sources=[
+                ChatSource(
+                    type="novadrive_gold",
+                    id="performance_vendedores",
+                    label="Gold Novadrive - performance de vendedores",
+                )
+            ],
+        )
+
+    return None
+
+
 def answer_question(question: str) -> ChatResponse:
     normalized_question = question.lower()
     explicit_dataset_match = DATASET_ID_PATTERN.search(normalized_question)
+
+    if _answers_about_novadrive(question) and explicit_dataset_match is None:
+        novadrive_response = _answer_novadrive_question(question)
+        if novadrive_response is not None:
+            return novadrive_response
 
     if _answers_about_job(question) and explicit_dataset_match is None:
         incident = _resolve_job(question) or get_job_incidents("12345")
@@ -227,7 +313,7 @@ def answer_question(question: str) -> ChatResponse:
     return ChatResponse(
         answer=(
             "Ainda não encontrei contexto suficiente para responder com confiança. "
-            "Tente perguntar sobre datasets, lineage ou jobs específicos do MVP."
+            "Tente perguntar sobre datasets, lineage, jobs ou indicadores da Novadrive."
         ),
         sources=[],
     )
