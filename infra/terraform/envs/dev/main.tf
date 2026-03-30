@@ -84,7 +84,10 @@ module "cloud_run" {
   image                 = var.bootstrap_image
   service_account_email = module.runtime_service_account.email
   labels                = local.common_labels
+
   env_vars = {
     APP_ENV = "dev"
   }
+
+  secret_env_vars = {}
 }

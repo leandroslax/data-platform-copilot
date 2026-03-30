@@ -28,6 +28,14 @@ variable "env_vars" {
   default = {}
 }
 
+variable "secret_env_vars" {
+  type = map(object({
+    secret  = string
+    version = string
+  }))
+  default = {}
+}
+
 resource "google_cloud_run_v2_service" "this" {
   name     = var.service_name
   project  = var.project_id
@@ -45,6 +53,20 @@ resource "google_cloud_run_v2_service" "this" {
         content {
           name  = env.key
           value = env.value
+        }
+      }
+
+      dynamic "env" {
+        for_each = var.secret_env_vars
+        content {
+          name = env.key
+
+          value_source {
+            secret_key_ref {
+              secret  = env.value.secret
+              version = env.value.version
+            }
+          }
         }
       }
     }

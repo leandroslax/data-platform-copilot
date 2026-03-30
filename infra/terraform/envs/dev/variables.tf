@@ -16,7 +16,7 @@ variable "bucket_location" {
 }
 
 variable "bootstrap_image" {
-  description = "Temporary bootstrap image for the Cloud Run service."
+  description = "Container image deployed to Cloud Run."
   type        = string
-  default     = "us-docker.pkg.dev/cloudrun/container/hello"
+  default     = "us-central1-docker.pkg.dev/data-platform-copilot-dev/data-platform-copilot/api:latest"
 }
