@@ -55,7 +55,6 @@ See the detailed architecture in [docs/solution-architecture.md](docs/solution-a
     ├── embeddings/
     ├── ingestion/
     └── metadata/
-
 Backend Status
 The current FastAPI backend already exposes MVP endpoints for:
 
@@ -79,6 +78,15 @@ Unity Catalog tables
 Databricks jobs
 Databricks job runs
 Databricks lineage
+Environment Variables
+The backend currently supports these environment variables:
+
+APP_ENV: application environment, defaults to dev
+DATABRICKS_HOST: Databricks workspace host, for example https://<workspace>.cloud.databricks.com
+DATABRICKS_TOKEN: Databricks personal access token or service token
+DATABRICKS_CATALOG: Unity Catalog catalog name, defaults to main
+If DATABRICKS_HOST and DATABRICKS_TOKEN are not defined, the API automatically falls back to local mock data for MVP development and tests.
+
 Local Development
 Recommended local setup:
 
