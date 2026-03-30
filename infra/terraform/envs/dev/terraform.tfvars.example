@@ -1,0 +1,4 @@
+project_id      = "your-gcp-project-id"
+region          = "us-central1"
+bucket_location = "US"
+bootstrap_image = "us-docker.pkg.dev/cloudrun/container/hello"
