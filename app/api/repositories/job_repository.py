@@ -92,7 +92,9 @@ def _get_job_source() -> List[Dict[str, Any]]:
     if client.is_configured():
         jobs = client.get_jobs()
         job_runs = client.get_job_runs()
-        return [_normalize_job_record(job, job_runs) for job in jobs]
+
+        if jobs:
+            return [_normalize_job_record(job, job_runs) for job in jobs]
 
     return [deepcopy(job) for job in JOBS]
 
