@@ -1,19 +1,19 @@
 # Data Platform Copilot
 
-Data Platform Copilot is a GenAI-oriented metadata and operations assistant for teams working on Databricks and GCP.
+O Data Platform Copilot é um assistente de metadados e operações orientado a GenAI para times que trabalham com Databricks e GCP.
 
-The project currently delivers a working MVP with:
+Hoje o projeto já entrega um MVP funcional com:
 
-- a FastAPI backend deployed on Cloud Run
-- Terraform-managed GCP infrastructure
-- GitHub Actions CI/CD
-- a React + Vite frontend demo
-- real Databricks-backed dataset discovery and dataset detail
-- safe mock fallback for sources that are not yet available in the workspace
+- backend FastAPI publicado no Cloud Run
+- infraestrutura GCP gerenciada com Terraform
+- CI/CD com GitHub Actions
+- frontend demo em React + Vite
+- descoberta real de datasets e detalhes de datasets via Databricks
+- fallback seguro para mock quando uma fonte ainda não está disponível no workspace
 
-## Current Status
+## Status Atual
 
-The platform is already usable end to end for demo and technical validation.
+A plataforma já está utilizável de ponta a ponta para demo e validação técnica.
 
 ### Backend
 
@@ -25,46 +25,46 @@ The platform is already usable end to end for demo and technical validation.
 - `GET /api/v1/lineage/{dataset_id}`
 - `POST /api/v1/chat`
 
-### What is real today
+### O que já está real hoje
 
-- dataset list comes from Databricks Unity Catalog
-- dataset detail comes from Databricks Unity Catalog
-- dataset columns come from Databricks Unity Catalog
-- chat can answer questions about explicit datasets such as `samples.tpch.orders`
-- chat can answer owner and column questions for real datasets
+- listagem de datasets via Unity Catalog
+- detalhe de dataset via Unity Catalog
+- colunas reais dos datasets via Unity Catalog
+- chat respondendo perguntas sobre datasets explícitos como `samples.tpch.orders`
+- chat respondendo owner e colunas de datasets reais
 
-### What still uses fallback logic
+### O que ainda usa fallback
 
-- jobs fall back to mock data when the Databricks workspace has no jobs yet
-- lineage falls back to mock data when the Databricks workspace does not expose a usable lineage API
-- chat still uses deterministic intent handling and structured sources rather than an LLM + RAG pipeline
+- jobs usam mock quando o workspace Databricks ainda não possui jobs reais
+- lineage usa mock quando o workspace Databricks não expõe uma API utilizável
+- o chat ainda usa roteamento determinístico e fontes estruturadas, não um fluxo completo com LLM + RAG
 
-## Product Direction
+## Direção do Produto
 
-The current application is already conversational, but it is best described as a grounded copilot MVP rather than a full LLM-based assistant.
+A aplicação já é conversacional, mas hoje ela é melhor descrita como um copilot grounded em fase MVP, e não ainda como um assistente totalmente baseado em LLM.
 
-Current interaction model:
+Modelo atual de interação:
 
-- structured API lookups
-- deterministic intent routing
-- natural-language answers generated from grounded metadata
+- consultas estruturadas em APIs
+- roteamento determinístico de intenção
+- respostas em linguagem natural geradas a partir de metadados grounded
 
-Target evolution:
+Evolução desejada:
 
-- ingestion pipelines for real metadata and documents
-- normalized bronze/silver/gold metadata layers
-- semantic retrieval and embeddings
-- LLM-based synthesis over grounded platform context
+- pipelines de ingestão de metadados e documentos reais
+- camadas bronze, silver e gold normalizadas
+- retrieval semântico e embeddings
+- síntese com LLM em cima do contexto grounded da plataforma
 
-## High-Level Architecture
+## Arquitetura de Alto Nível
 
-- Sources: Databricks Unity Catalog, Databricks Jobs, operational metadata, internal documentation, and future platform signals
-- Bronze: raw metadata and raw operational records
-- Silver: normalized datasets, columns, incidents, lineage edges, documents, and owners
-- Gold: API-facing views and future retrieval-ready assets
-- Product layer: FastAPI services, React frontend, CI/CD, Terraform-managed infrastructure, and future RAG workflows
+- Fontes: Databricks Unity Catalog, Databricks Jobs, metadados operacionais, documentação interna e futuros sinais da plataforma
+- Bronze: metadados brutos e registros operacionais brutos
+- Silver: datasets, colunas, incidentes, lineage, documentos e owners normalizados
+- Gold: visões voltadas para API e ativos prontos para retrieval
+- Camada de produto: serviços FastAPI, frontend React, CI/CD, infraestrutura Terraform e futuros fluxos de RAG
 
-Reference docs:
+Documentação de referência:
 
 - [docs/mvp.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/mvp.md)
 - [docs/architecture.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/architecture.md)
@@ -72,7 +72,7 @@ Reference docs:
 - [docs/data-model.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/data-model.md)
 - [docs/api-contract.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/api-contract.md)
 
-## Repository Structure
+## Estrutura do Repositório
 
 ```text
 .
@@ -91,16 +91,16 @@ Reference docs:
 └── README.md
 ```
 
-## Backend Configuration
+## Configuração do Backend
 
-The API reads configuration from environment variables:
+A API lê configuração por variáveis de ambiente:
 
-- `APP_ENV`: application environment, defaults to `dev`
-- `DATABRICKS_HOST`: Databricks workspace host
-- `DATABRICKS_TOKEN`: Databricks personal access token
-- `DATABRICKS_CATALOG`: Unity Catalog catalog name, defaults to `main` in code
+- `APP_ENV`: ambiente da aplicação, padrão `dev`
+- `DATABRICKS_HOST`: host do workspace Databricks
+- `DATABRICKS_TOKEN`: token pessoal do Databricks
+- `DATABRICKS_CATALOG`: catálogo do Unity Catalog, padrão `main` no código
 
-Example local file:
+Exemplo de arquivo local:
 
 ```dotenv
 APP_ENV=dev
@@ -109,20 +109,20 @@ DATABRICKS_TOKEN=
 DATABRICKS_CATALOG=main
 ```
 
-Notes:
+Observações:
 
-- if `DATABRICKS_HOST` and `DATABRICKS_TOKEN` are empty, the API falls back to local mock data where applicable
-- the current dev Cloud Run environment is configured via Terraform to use the Databricks `samples` catalog
-- local frontend development is enabled via CORS for common Vite ports such as `5173`, `5174`, and `4173`
+- se `DATABRICKS_HOST` e `DATABRICKS_TOKEN` estiverem vazios, a API faz fallback para mock quando aplicável
+- o ambiente `dev` no Cloud Run está configurado via Terraform para usar o catálogo `samples`
+- o desenvolvimento local do frontend está habilitado via CORS para portas comuns do Vite como `5173`, `5174` e `4173`
 
-## Local Backend Development
+## Desenvolvimento Local do Backend
 
-Recommended setup:
+Setup recomendado:
 
 - Python 3.11
-- virtual environment in `.venv`
+- ambiente virtual em `.venv`
 
-Install and run:
+Instalação e execução:
 
 ```bash
 python3.11 -m venv .venv
@@ -133,7 +133,7 @@ python -m pytest tests/api
 uvicorn app.api.main:app --reload
 ```
 
-Sanity checks:
+Checks rápidos:
 
 ```bash
 curl http://127.0.0.1:8000/api/v1/health
@@ -141,19 +141,19 @@ curl http://127.0.0.1:8000/api/v1/datasets
 curl http://127.0.0.1:8000/api/v1/datasets/samples.tpch.orders
 ```
 
-## Running the Backend With Real Databricks Metadata
+## Rodando o Backend com Metadados Reais do Databricks
 
-To use real Databricks metadata locally:
+Para usar metadados reais localmente:
 
 ```bash
 export APP_ENV=dev
-export DATABRICKS_HOST="https://<your-workspace>.gcp.databricks.com"
-export DATABRICKS_TOKEN="<your-token>"
+export DATABRICKS_HOST="https://<seu-workspace>.gcp.databricks.com"
+export DATABRICKS_TOKEN="<seu-token>"
 export DATABRICKS_CATALOG="samples"
 uvicorn app.api.main:app --reload
 ```
 
-Example:
+Exemplo:
 
 ```bash
 curl http://127.0.0.1:8000/api/v1/datasets/samples.tpch.orders
@@ -164,17 +164,18 @@ curl http://127.0.0.1:8000/api/v1/chat \
 
 ## Frontend Demo
 
-A React + Vite frontend demo now lives in [web/](/Users/leandrosantos/Downloads/data-platform-copilot/web).
+Existe um frontend demo em React + Vite em [web/](/Users/leandrosantos/Downloads/data-platform-copilot/web).
 
-The frontend currently supports:
+Hoje o frontend suporta:
 
-- chat prompt and answer rendering
-- dataset list from the live API
-- dataset detail with real columns
-- jobs snapshot panel
-- highlighted featured dataset card
+- envio de perguntas no chat
+- renderização de resposta
+- lista de datasets da API real
+- detalhe do dataset com colunas reais
+- painel de jobs
+- card de destaque para dataset principal
 
-Start locally:
+Para rodar localmente:
 
 ```bash
 cd web
@@ -182,73 +183,73 @@ npm install
 npm run dev
 ```
 
-Open:
+Abrir:
 
 - [http://localhost:5173](http://localhost:5173)
 
-If Vite chooses another port, make sure the backend CORS list includes that local origin.
+Se o Vite subir em outra porta, confirme que essa origem está liberada no CORS do backend.
 
-## Testing
+## Testes
 
-Backend API tests:
+Testes da API:
 
 ```bash
 python -m pytest tests/api
 ```
 
-Current test coverage includes:
+Cobertura atual inclui:
 
-- Databricks client behavior
-- dataset repository and detail flows
-- jobs fallback behavior
-- lineage fallback behavior
-- chat routing for dataset owner, columns, jobs, and fallback answers
+- comportamento do cliente Databricks
+- fluxo de dataset repository e dataset detail
+- fallback de jobs
+- fallback de lineage
+- roteamento do chat para owner, colunas, jobs e resposta fallback
 
-The backend tests explicitly clear Databricks environment variables where needed so mock-backed behavior remains deterministic.
+Os testes do backend limpam variáveis do Databricks quando necessário para manter o comportamento mock determinístico.
 
 ## CI/CD
 
-### Continuous integration
+### Integração contínua
 
-GitHub Actions CI currently runs:
+O GitHub Actions CI hoje executa:
 
-- Terraform format and validate checks
-- repository file checks
-- API tests
-- Docker build validation
+- `terraform fmt` e `terraform validate`
+- checks de arquivos obrigatórios
+- testes da API
+- validação de build Docker
 
 Workflow:
 
 - [.github/workflows/ci.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/ci.yml)
 
-### Continuous deployment
+### Deploy contínuo
 
-Pushes to `main` trigger:
+Push em `main` dispara:
 
-- Docker image build
-- image push to Artifact Registry
-- Cloud Run deployment
+- build da imagem Docker
+- push para o Artifact Registry
+- deploy no Cloud Run
 
 Workflow:
 
 - [.github/workflows/deploy.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy.yml)
 
-## Infrastructure
+## Infraestrutura
 
-Terraform for the dev environment provisions:
+O Terraform do ambiente `dev` provisiona:
 
-- required Google APIs
-- Artifact Registry repository
-- Cloud Storage artifacts bucket
-- runtime service account
-- Secret Manager secret for Databricks credentials
-- Cloud Run service for the API
+- APIs necessárias do Google Cloud
+- repositório no Artifact Registry
+- bucket de artefatos no Cloud Storage
+- service account de runtime
+- secret no Secret Manager para credenciais do Databricks
+- serviço Cloud Run para a API
 
-Main stack:
+Stack principal:
 
 - [infra/terraform/envs/dev/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/envs/dev/main.tf)
 
-Apply locally:
+Aplicação local:
 
 ```bash
 cd infra/terraform/envs/dev
@@ -258,13 +259,13 @@ terraform plan -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
 
-## Live Dev Endpoints
+## Endpoints do Ambiente Dev
 
-Current Cloud Run backend:
+Backend atual no Cloud Run:
 
 - [data-platform-copilot-api-914371024790.us-central1.run.app](https://data-platform-copilot-api-914371024790.us-central1.run.app)
 
-Examples:
+Exemplos:
 
 ```bash
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/health
@@ -277,24 +278,24 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
   -d '{"question":"Quais colunas existem em samples.tpch.orders?"}'
 ```
 
-## What Has Been Implemented So Far
+## O que já foi implementado
 
-- initial backend scaffold with FastAPI routes and schemas
-- Databricks client for datasets, dataset detail, jobs, and runs
-- safe fallback from real sources to mock data where needed
-- real Databricks integration for datasets and columns
-- Terraform modules and dev environment for GCP
-- Cloud Run deployment of the API
-- GitHub Actions CI and deploy workflow
-- React frontend demo connected to the live backend
-- chat improvement for explicit dataset resolution and column answers
-- local CORS support for Vite development
+- scaffold inicial do backend com rotas e schemas FastAPI
+- cliente Databricks para datasets, detalhe de dataset, jobs e runs
+- fallback seguro de fontes reais para mock quando necessário
+- integração real com Databricks para datasets e colunas
+- módulos Terraform e ambiente `dev` no GCP
+- deploy da API no Cloud Run
+- workflows de CI e deploy no GitHub Actions
+- frontend demo em React conectado ao backend real
+- melhoria do chat para resolver datasets explícitos e responder colunas
+- suporte local a CORS para desenvolvimento com Vite
 
-## Suggested Next Steps
+## Próximos Passos Sugeridos
 
-- build the first real ingestion pipeline for datasets, columns, owners, and descriptions
-- persist ingested metadata outside direct API calls
-- expand chat to support broader environment questions such as owner-based discovery
-- add semantic retrieval and embeddings
-- connect the copilot to an LLM for grounded answer synthesis
-- publish the frontend demo
+- criar o primeiro pipeline real de ingestão para datasets, colunas, owners e descrições
+- persistir metadados ingeridos fora das chamadas diretas da API
+- expandir o chat para perguntas mais amplas sobre o ambiente, como consultas por owner
+- adicionar retrieval semântico e embeddings
+- conectar o copilot a um LLM para síntese grounded de respostas
+- publicar o frontend demo
