@@ -121,4 +121,48 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        return []
+        response = self._get(
+            "/api/2.1/unity-catalog/table-lineage",
+            params={"catalog_name": self.catalog},
+        )
+        lineage_records = response.get("lineage", [])
+        normalized_lineage: List[Dict] = []
+
+        for item in lineage_records:
+            source_table = item.get("table_info", {})
+            full_name = (
+                source_table.get("full_name")
+                or item.get("dataset_id")
+                or ""
+            )
+
+            upstreams = []
+            for upstream in item.get("upstreams", []):
+                upstream_table = upstream.get("table_info", {})
+                upstream_name = upstream_table.get("full_name")
+                if upstream_name:
+                    upstreams.append(upstream_name)
+
+            downstreams = []
+            for downstream in item.get("downstreams", []):
+                downstream_table = downstream.get("table_info", {})
+                downstream_name = downstream_table.get("full_name")
+                if downstream_name:
+                    downstreams.append(downstream_name)
+
+            related_jobs = []
+            for job in item.get("jobs", []):
+                job_name = job.get("job_name") or job.get("name")
+                if job_name:
+                    related_jobs.append(job_name)
+
+            normalized_lineage.append(
+                {
+                    "dataset_id": full_name,
+                    "upstream": upstreams,
+                    "downstream": downstreams,
+                    "related_jobs": related_jobs,
+                }
+            )
+
+        return normalized_lineage

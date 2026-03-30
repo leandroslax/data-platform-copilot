@@ -165,3 +165,55 @@ def test_get_job_runs_calls_databricks_runs_api(monkeypatch) -> None:
             "end_time": "1711793100000",
         }
     ]
+
+
+def test_get_lineage_calls_databricks_lineage_api(monkeypatch) -> None:
+    client = DatabricksClient()
+    client.host = "https://example.cloud.databricks.com"
+    client.token = "token"
+    client.catalog = "main"
+
+    def fake_get(path: str, params=None):
+        assert path == "/api/2.1/unity-catalog/table-lineage"
+        assert params == {"catalog_name": "main"}
+        return {
+            "lineage": [
+                {
+                    "table_info": {
+                        "full_name": "main.sales.orders",
+                    },
+                    "upstreams": [
+                        {
+                            "table_info": {
+                                "full_name": "main.raw.orders_source",
+                            }
+                        }
+                    ],
+                    "downstreams": [
+                        {
+                            "table_info": {
+                                "full_name": "main.gold.sales_kpis",
+                            }
+                        }
+                    ],
+                    "jobs": [
+                        {
+                            "job_name": "sales_orders_pipeline",
+                        }
+                    ],
+                }
+            ]
+        }
+
+    monkeypatch.setattr(client, "_get", fake_get)
+
+    lineage = client.get_lineage()
+
+    assert lineage == [
+        {
+            "dataset_id": "main.sales.orders",
+            "upstream": ["main.raw.orders_source"],
+            "downstream": ["main.gold.sales_kpis"],
+            "related_jobs": ["sales_orders_pipeline"],
+        }
+    ]
