@@ -95,3 +95,37 @@ LINEAGE = {
         ],
     },
 }
+
+JOBS = [
+    {
+        "job_id": "12345",
+        "job_name": "sales_orders_pipeline",
+        "status": "active",
+        "latest_status": "failed",
+        "latest_error_summary": "Cluster terminated before task completion",
+        "recent_incidents": [
+            {
+                "run_id": "98765",
+                "severity": "high",
+                "event_type": "job_failure",
+                "event_timestamp": "2026-03-30T10:15:00Z",
+                "summary": "Cluster terminated before task completion",
+            },
+            {
+                "run_id": "98760",
+                "severity": "medium",
+                "event_type": "retry_succeeded",
+                "event_timestamp": "2026-03-29T08:00:00Z",
+                "summary": "Pipeline recovered after retry",
+            },
+        ],
+    },
+    {
+        "job_id": "67890",
+        "job_name": "finance_invoices_pipeline",
+        "status": "active",
+        "latest_status": "success",
+        "latest_error_summary": None,
+        "recent_incidents": [],
+    },
+]
