@@ -1,3 +1,5 @@
+from urllib.error import HTTPError
+
 from app.api.clients.databricks_client import DatabricksClient
 
 
@@ -92,6 +94,20 @@ def test_get_tables_builds_full_name_when_missing(monkeypatch) -> None:
             "documentation": [],
         }
     ]
+
+
+def test_get_tables_returns_empty_on_http_error(monkeypatch) -> None:
+    client = DatabricksClient()
+    client.host = "https://example.cloud.databricks.com"
+    client.token = "token"
+    client.catalog = "main"
+
+    def fake_get(path: str, params=None):
+        raise HTTPError("https://example.com", 400, "Bad Request", hdrs=None, fp=None)
+
+    monkeypatch.setattr(client, "_get", fake_get)
+
+    assert client.get_tables() == []
 
 
 def test_get_jobs_calls_databricks_jobs_api(monkeypatch) -> None:

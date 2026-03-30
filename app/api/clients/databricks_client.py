@@ -1,5 +1,6 @@
 import json
 from typing import Dict, List, Optional
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -39,10 +40,13 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        response = self._get(
-            "/api/2.1/unity-catalog/tables",
-            params={"catalog_name": self.catalog},
-        )
+        try:
+            response = self._get(
+                "/api/2.1/unity-catalog/tables",
+                params={"catalog_name": self.catalog},
+            )
+        except (HTTPError, URLError):
+            return []
 
         tables = response.get("tables", [])
         normalized_tables: List[Dict] = []
@@ -77,7 +81,11 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        response = self._get("/api/2.1/jobs/list")
+        try:
+            response = self._get("/api/2.1/jobs/list")
+        except (HTTPError, URLError):
+            return []
+
         jobs = response.get("jobs", [])
         normalized_jobs: List[Dict] = []
 
@@ -97,7 +105,11 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        response = self._get("/api/2.1/jobs/runs/list", params={"limit": "25"})
+        try:
+            response = self._get("/api/2.1/jobs/runs/list", params={"limit": "25"})
+        except (HTTPError, URLError):
+            return []
+
         runs = response.get("runs", [])
         normalized_runs: List[Dict] = []
 
@@ -121,20 +133,20 @@ class DatabricksClient:
         if not self.is_configured():
             return []
 
-        response = self._get(
-            "/api/2.1/unity-catalog/table-lineage",
-            params={"catalog_name": self.catalog},
-        )
+        try:
+            response = self._get(
+                "/api/2.1/unity-catalog/table-lineage",
+                params={"catalog_name": self.catalog},
+            )
+        except (HTTPError, URLError):
+            return []
+
         lineage_records = response.get("lineage", [])
         normalized_lineage: List[Dict] = []
 
         for item in lineage_records:
             source_table = item.get("table_info", {})
-            full_name = (
-                source_table.get("full_name")
-                or item.get("dataset_id")
-                or ""
-            )
+            full_name = source_table.get("full_name") or item.get("dataset_id") or ""
 
             upstreams = []
             for upstream in item.get("upstreams", []):

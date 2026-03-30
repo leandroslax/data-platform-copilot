@@ -35,7 +35,9 @@ def _get_dataset_source() -> List[Dict[str, Any]]:
     client = DatabricksClient()
 
     if client.is_configured():
-        return [_normalize_dataset_record(dataset) for dataset in client.get_tables()]
+        tables = client.get_tables()
+        if tables:
+            return [_normalize_dataset_record(dataset) for dataset in tables]
 
     return [_normalize_dataset_record(dataset) for dataset in DATASETS]
 
