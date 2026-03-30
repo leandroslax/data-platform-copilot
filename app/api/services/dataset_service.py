@@ -1,5 +1,6 @@
 from typing import Optional
 
+from app.api.repositories.dataset_repository import find_dataset_by_id, list_datasets as list_dataset_records
 from app.api.schemas.datasets import (
     DatasetColumn,
     DatasetDetailResponse,
@@ -7,7 +8,6 @@ from app.api.schemas.datasets import (
     DatasetItem,
     DatasetListResponse,
 )
-from app.api.services.mock_data import DATASETS
 
 
 def list_datasets(
@@ -17,7 +17,7 @@ def list_datasets(
     owner: Optional[str],
     limit: int,
 ) -> DatasetListResponse:
-    filtered = DATASETS
+    filtered = list_dataset_records()
 
     if q:
         query = q.lower()
@@ -68,34 +68,35 @@ def list_datasets(
 
 
 def get_dataset(dataset_id: str) -> DatasetDetailResponse:
-    for dataset in DATASETS:
-        if dataset["dataset_id"] == dataset_id:
-            return DatasetDetailResponse(
-                dataset_id=dataset["dataset_id"],
-                name=dataset["name"],
-                catalog=dataset.get("catalog"),
-                schema=dataset.get("schema"),
-                table=dataset.get("table"),
-                type=dataset["type"],
-                description=dataset.get("description"),
-                owner=dataset.get("owner"),
-                columns=[
-                    DatasetColumn(
-                        name=column["name"],
-                        data_type=column.get("data_type"),
-                        nullable=column.get("nullable"),
-                        description=column.get("description"),
-                    )
-                    for column in dataset.get("columns", [])
-                ],
-                documentation=[
-                    DatasetDocument(
-                        document_id=document["document_id"],
-                        title=document["title"],
-                    )
-                    for document in dataset.get("documentation", [])
-                ],
-            )
+    dataset = find_dataset_by_id(dataset_id)
+
+    if dataset:
+        return DatasetDetailResponse(
+            dataset_id=dataset["dataset_id"],
+            name=dataset["name"],
+            catalog=dataset.get("catalog"),
+            schema=dataset.get("schema"),
+            table=dataset.get("table"),
+            type=dataset["type"],
+            description=dataset.get("description"),
+            owner=dataset.get("owner"),
+            columns=[
+                DatasetColumn(
+                    name=column["name"],
+                    data_type=column.get("data_type"),
+                    nullable=column.get("nullable"),
+                    description=column.get("description"),
+                )
+                for column in dataset.get("columns", [])
+            ],
+            documentation=[
+                DatasetDocument(
+                    document_id=document["document_id"],
+                    title=document["title"],
+                )
+                for document in dataset.get("documentation", [])
+            ],
+        )
 
     return DatasetDetailResponse(
         dataset_id=dataset_id,
