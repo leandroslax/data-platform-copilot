@@ -51,3 +51,4 @@ Deliver an assistant that can answer questions such as:
 3. Implement ingestion for Databricks metadata.
 4. Model bronze, silver, and gold datasets.
 5. Build the first RAG workflow and API endpoints.
+# data-platform-copilot
