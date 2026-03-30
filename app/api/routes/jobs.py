@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Query
 
 router = APIRouter()
@@ -5,8 +7,8 @@ router = APIRouter()
 
 @router.get("/jobs")
 def list_jobs(
-    q: str | None = Query(default=None),
-    status: str | None = Query(default=None),
+    q: Optional[str] = Query(default=None),
+    status: Optional[str] = Query(default=None),
     limit: int = Query(default=10, ge=1, le=100),
 ) -> dict:
     return {

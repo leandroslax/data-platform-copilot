@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Query
 
 router = APIRouter()
@@ -5,10 +7,10 @@ router = APIRouter()
 
 @router.get("/datasets")
 def list_datasets(
-    q: str | None = Query(default=None),
-    catalog: str | None = Query(default=None),
-    schema: str | None = Query(default=None),
-    owner: str | None = Query(default=None),
+    q: Optional[str] = Query(default=None),
+    catalog: Optional[str] = Query(default=None),
+    schema: Optional[str] = Query(default=None),
+    owner: Optional[str] = Query(default=None),
     limit: int = Query(default=10, ge=1, le=100),
 ) -> dict:
     return {
