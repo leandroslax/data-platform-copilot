@@ -86,8 +86,15 @@ module "cloud_run" {
   labels                = local.common_labels
 
   env_vars = {
-    APP_ENV = "dev"
+    APP_ENV            = "dev"
+    DATABRICKS_HOST    = "https://8259560804281928.8.gcp.databricks.com"
+    DATABRICKS_CATALOG = "main"
   }
 
-  secret_env_vars = {}
+  secret_env_vars = {
+    DATABRICKS_TOKEN = {
+      secret  = "data-platform-copilot-app-config"
+      version = "latest"
+    }
+  }
 }
