@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.api.core.config import settings
 from app.api.routes.chat import router as chat_router
 from app.api.routes.datasets import router as datasets_router
 from app.api.routes.health import router as health_router
@@ -7,8 +8,8 @@ from app.api.routes.jobs import router as jobs_router
 from app.api.routes.lineage import router as lineage_router
 
 app = FastAPI(
-    title="Data Platform Copilot API",
-    version="0.1.0",
+    title=settings.app_name,
+    version=settings.app_version,
     description="API for metadata discovery, lineage lookup, troubleshooting, and GenAI workflows.",
 )
 

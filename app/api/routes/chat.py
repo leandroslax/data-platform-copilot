@@ -1,16 +1,11 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
+
+from app.api.schemas.chat import ChatRequest, ChatResponse
+from app.api.services.chat_service import answer_question
 
 router = APIRouter()
 
 
-class ChatRequest(BaseModel):
-    question: str
-
-
-@router.post("/chat")
-def chat(payload: ChatRequest) -> dict:
-    return {
-        "answer": f"Question received: {payload.question}",
-        "sources": [],
-    }
+@router.post("/chat", response_model=ChatResponse)
+def chat(payload: ChatRequest) -> ChatResponse:
+    return answer_question(payload.question)

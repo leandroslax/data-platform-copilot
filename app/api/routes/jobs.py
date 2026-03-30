@@ -2,32 +2,21 @@ from typing import Optional
 
 from fastapi import APIRouter, Query
 
+from app.api.schemas.jobs import JobIncidentsResponse, JobListResponse
+from app.api.services.job_service import get_job_incidents, list_jobs
+
 router = APIRouter()
 
 
-@router.get("/jobs")
-def list_jobs(
+@router.get("/jobs", response_model=JobListResponse)
+def jobs(
     q: Optional[str] = Query(default=None),
     status: Optional[str] = Query(default=None),
     limit: int = Query(default=10, ge=1, le=100),
-) -> dict:
-    return {
-        "items": [],
-        "total": 0,
-        "filters": {
-            "q": q,
-            "status": status,
-            "limit": limit,
-        },
-    }
+) -> JobListResponse:
+    return list_jobs(q=q, status=status, limit=limit)
 
 
-@router.get("/jobs/{job_id}/incidents")
-def get_job_incidents(job_id: str) -> dict:
-    return {
-        "job_id": job_id,
-        "job_name": None,
-        "latest_status": None,
-        "latest_error_summary": None,
-        "recent_incidents": [],
-    }
+@router.get("/jobs/{job_id}/incidents", response_model=JobIncidentsResponse)
+def job_incidents(job_id: str) -> JobIncidentsResponse:
+    return get_job_incidents(job_id)
