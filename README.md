@@ -57,3 +57,20 @@ See the detailed architecture in [docs/solution-architecture.md](docs/solution-a
     └── metadata/
 
 
+
+## Local Development
+
+Recommended local setup:
+
+- Python 3.11
+- Virtual environment in `.venv`
+
+Example:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pytest
+
