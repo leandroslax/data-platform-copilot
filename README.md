@@ -6,7 +6,7 @@ Hoje o projeto já entrega um MVP funcional com:
 
 - backend FastAPI publicado no Cloud Run
 - infraestrutura GCP gerenciada com Terraform
-- orquestração em evolução com Cloud Composer
+- orquestração validada localmente com Apache Airflow via Docker
 - pipeline medalhão da Novadrive em evolução com PostgreSQL, GCS e BigQuery
 - CI/CD com GitHub Actions
 - frontend demo em React + Vite
@@ -18,7 +18,7 @@ Hoje o projeto já entrega um MVP funcional com:
 
 A plataforma já está utilizável de ponta a ponta para demo e validação técnica.
 
-Na infraestrutura `dev`, o backend e os componentes-base já estão provisionados. A camada de orquestração com Cloud Composer está sendo estabilizada no Terraform e passou por troubleshooting de IAM, naming e quota do GKE durante a criação do ambiente.
+Na infraestrutura `dev`, o backend e os componentes-base já estão provisionados. A camada de orquestração com Cloud Composer passou por troubleshooting de IAM, naming e quota do GKE durante a criação do ambiente. Enquanto o Composer fica em standby por quota, a pipeline da Novadrive já foi validada ponta a ponta em Apache Airflow local via Docker.
 
 ### Backend
 
@@ -48,7 +48,7 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - jobs usam mock quando o workspace Databricks ainda não possui jobs reais
 - lineage usa mock quando o workspace Databricks não expõe uma API utilizável
 - o chat ainda usa roteamento determinístico e fontes estruturadas, não um fluxo completo com LLM + RAG
-- a ingestão da Novadrive ainda está em fase de estabilização operacional no Cloud Composer
+- o Cloud Composer ainda está em standby por quota de Compute Engine/GKE
 
 ## Direção do Produto
 
@@ -73,7 +73,7 @@ Evolução desejada:
 - Bronze: dados brutos e alinhados à origem, incluindo extrações da Novadrive em GCS e tabelas bronze no BigQuery
 - Silver: entidades normalizadas e enriquecidas, incluindo a tabela `silver_novadrive.vendas`
 - Gold: visões analíticas e product-facing, incluindo `gold_novadrive.faturamento_por_concessionaria` e `gold_novadrive.performance_vendedores`
-- Camada de produto: serviços FastAPI, frontend React, CI/CD, infraestrutura Terraform, Cloud Composer e futuros fluxos de RAG
+- Camada de produto: serviços FastAPI, frontend React, CI/CD, infraestrutura Terraform, Airflow local para operação do pipeline e futuros fluxos de RAG
 
 ## Arquitetura Medalhão
 
@@ -89,7 +89,7 @@ Fluxo principal atual da Novadrive:
 PostgreSQL Novadrive
         |
         v
-Extração incremental no Cloud Composer
+Extração incremental no Airflow local
         |
         v
 GCS Bronze + BigQuery Bronze
@@ -148,6 +148,7 @@ Documentação de referência:
 │           ├── bigquery_dataset/
 │           └── composer_environment/
 ├── orchestration/
+│   ├── airflow/
 │   └── composer/
 │       ├── dags/
 │       └── README.md
@@ -372,6 +373,31 @@ Arquivos principais:
 - [infra/terraform/modules/composer_environment/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/modules/composer_environment/main.tf)
 - [orchestration/composer/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer/README.md)
 
+## Airflow Local
+
+Como workaround para o bloqueio de quota do Composer, o projeto agora possui um runtime local de Apache Airflow via Docker em [orchestration/airflow/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow).
+
+Esse ambiente já foi validado com a DAG `novadrive_medallion_pipeline`, executando com sucesso:
+
+- extração do PostgreSQL da Novadrive
+- carga Bronze em GCS e BigQuery
+- transformação Silver
+- transformação Gold
+- checks finais de qualidade nas tabelas Gold
+
+Validação funcional observada:
+
+- `silver_novadrive.vendas`: `2.750.274` linhas
+- `gold_novadrive.faturamento_por_concessionaria`: `29` linhas
+- `gold_novadrive.performance_vendedores`: `54` linhas
+
+Arquivos principais:
+
+- [orchestration/airflow/docker-compose.yml](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/docker-compose.yml)
+- [orchestration/airflow/Dockerfile](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/Dockerfile)
+- [orchestration/airflow/requirements-airflow.txt](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/requirements-airflow.txt)
+- [orchestration/airflow/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/README.md)
+
 ## Troubleshooting Recente
 
 Durante a criação do Composer em `us-central1`, os logs indicaram que o problema principal deixou de ser IAM e passou a ser capacidade/quota do GKE/Compute Engine.
@@ -392,10 +418,10 @@ Leitura atual:
 
 ## Próximos Passos
 
+- manter a operação da Novadrive no Airflow local enquanto o Composer estiver bloqueado por quota
 - concluir o provisionamento do Cloud Composer com quota suficiente
 - publicar DAGs em [orchestration/composer/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer)
-- conectar os pipelines de ingestão e metadados ao Composer
-- substituir a execução local/manual da Novadrive por execução orquestrada e rastreável
+- migrar a DAG validada no Airflow local para o Composer quando a quota estiver disponível
 - evoluir de fallback/mock para fluxos orquestrados de ponta a ponta
 
 ## Endpoints do Ambiente Dev
@@ -427,6 +453,7 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - service layer e repositório da Novadrive para indicadores analíticos
 - pipeline medalhão da Novadrive em código, com ingestão PostgreSQL -> Bronze -> Silver -> Gold
 - DAG `novadrive_medallion_pipeline` no Composer
+- runtime local de Apache Airflow via Docker para executar a DAG da Novadrive
 - módulos Terraform e ambiente `dev` no GCP
 - deploy da API no Cloud Run
 - workflows de CI e deploy no GitHub Actions
@@ -437,7 +464,7 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 
 ## Próximos Passos Sugeridos
 
-- criar o primeiro pipeline real de ingestão para datasets, colunas, owners e descrições
+- migrar a operação validada no Airflow local para o Cloud Composer quando a quota do projeto permitir
 - persistir metadados ingeridos fora das chamadas diretas da API
 - expandir o chat para perguntas mais amplas sobre o ambiente, como consultas por owner
 - adicionar retrieval semântico e embeddings

@@ -1,0 +1,21 @@
+[2026-03-31T18:03:59.286+0000] {local_task_job_runner.py:123} INFO - ::group::Pre task execution logs
+[2026-03-31T18:03:59.337+0000] {taskinstance.py:2614} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: novadrive_medallion_pipeline.build_gold_performance_vendedores manual__2026-03-31T18:01:41+00:00 [queued]>
+[2026-03-31T18:03:59.349+0000] {taskinstance.py:2614} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: novadrive_medallion_pipeline.build_gold_performance_vendedores manual__2026-03-31T18:01:41+00:00 [queued]>
+[2026-03-31T18:03:59.350+0000] {taskinstance.py:2867} INFO - Starting attempt 1 of 3
+[2026-03-31T18:03:59.365+0000] {taskinstance.py:2890} INFO - Executing <Task(BigQueryInsertJobOperator): build_gold_performance_vendedores> on 2026-03-31 18:01:41+00:00
+[2026-03-31T18:03:59.384+0000] {logging_mixin.py:190} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:70 DeprecationWarning: This process (pid=777) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2026-03-31T18:03:59.387+0000] {standard_task_runner.py:72} INFO - Started process 779 to run task
+[2026-03-31T18:03:59.395+0000] {standard_task_runner.py:104} INFO - Running: ['***', 'tasks', 'run', 'novadrive_medallion_pipeline', 'build_gold_performance_vendedores', 'manual__2026-03-31T18:01:41+00:00', '--job-id', '36', '--raw', '--subdir', 'DAGS_FOLDER/novadrive_medallion_pipeline.py', '--cfg-path', '/tmp/tmp0ghhqdt7']
+[2026-03-31T18:03:59.407+0000] {standard_task_runner.py:105} INFO - Job 36: Subtask build_gold_performance_vendedores
+[2026-03-31T18:03:59.519+0000] {task_command.py:467} INFO - Running <TaskInstance: novadrive_medallion_pipeline.build_gold_performance_vendedores manual__2026-03-31T18:01:41+00:00 [running]> on host 7ff827c161ca
+[2026-03-31T18:03:59.676+0000] {taskinstance.py:3134} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='data-platform' AIRFLOW_CTX_DAG_ID='novadrive_medallion_pipeline' AIRFLOW_CTX_TASK_ID='build_gold_performance_vendedores' AIRFLOW_CTX_EXECUTION_DATE='2026-03-31T18:01:41+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2026-03-31T18:01:41+00:00'
+[2026-03-31T18:03:59.680+0000] {taskinstance.py:732} INFO - ::endgroup::
+[2026-03-31T18:04:00.837+0000] {connection.py:277} WARNING - Connection schemes (type: google_cloud_platform) shall not contain '_' according to RFC3986.
+[2026-03-31T18:04:00.839+0000] {base.py:84} INFO - Retrieving connection 'google_cloud_default'
+[2026-03-31T18:04:00.841+0000] {bigquery.py:2872} INFO - Executing: {'query': {'query': 'CREATE OR REPLACE TABLE `data-platform-copilot-dev.gold_novadrive.performance_vendedores` AS\nSELECT\n  id_vendedores,\n  vendedor_nome,\n  id_concessionarias,\n  concessionaria,\n  cidade,\n  estado,\n  sigla_estado,\n  COUNT(*) AS total_vendas,\n  SUM(valor_pago) AS faturamento_total,\n  AVG(valor_pago) AS ticket_medio,\n  MIN(data_venda) AS primeira_venda,\n  MAX(data_venda) AS ultima_venda\nFROM `data-platform-copilot-dev.silver_novadrive.vendas`\nGROUP BY\n  id_vendedores,\n  vendedor_nome,\n  id_concessionarias,\n  concessionaria,\n  cidade,\n  estado,\n  sigla_estado', 'useLegacySql': False}}'
+[2026-03-31T18:04:00.935+0000] {bigquery.py:1670} INFO - Inserting job ***_novadrive_medallion_pipeline_build_gold_performance_vendedores_2026_03_31T18_01_41_00_00_14c83b9b432de6aeb61e35e5f3c2bccd
+[2026-03-31T18:04:06.539+0000] {taskinstance.py:341} INFO - ::group::Post task execution logs
+[2026-03-31T18:04:06.545+0000] {taskinstance.py:353} INFO - Marking task as SUCCESS. dag_id=novadrive_medallion_pipeline, task_id=build_gold_performance_vendedores, run_id=manual__2026-03-31T18:01:41+00:00, execution_date=20260331T180141, start_date=20260331T180359, end_date=20260331T180406
+[2026-03-31T18:04:06.638+0000] {local_task_job_runner.py:266} INFO - Task exited with return code 0
+[2026-03-31T18:04:06.712+0000] {taskinstance.py:3901} INFO - 1 downstream tasks scheduled from follow-on schedule check
+[2026-03-31T18:04:06.713+0000] {local_task_job_runner.py:245} INFO - ::endgroup::

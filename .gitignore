@@ -24,3 +24,6 @@ infra/terraform/envs/dev/terraform.tfvars
 .DS_Store
 .idea/
 .vscode/
+
+# Local Airflow credentials
+orchestration/airflow/keys/*.json
