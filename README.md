@@ -7,9 +7,11 @@ Hoje o projeto já entrega um MVP funcional com:
 - backend FastAPI publicado no Cloud Run
 - infraestrutura GCP gerenciada com Terraform
 - orquestração em evolução com Cloud Composer
+- pipeline medalhão da Novadrive em evolução com PostgreSQL, GCS e BigQuery
 - CI/CD com GitHub Actions
 - frontend demo em React + Vite
 - descoberta real de datasets e detalhes de datasets via Databricks
+- consultas analíticas reais da Novadrive via BigQuery Gold
 - fallback seguro para mock quando uma fonte ainda não está disponível no workspace
 
 ## Status Atual
@@ -26,6 +28,8 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - `GET /api/v1/jobs`
 - `GET /api/v1/jobs/{job_id}/incidents`
 - `GET /api/v1/lineage/{dataset_id}`
+- `GET /api/v1/novadrive/faturamento/concessionarias`
+- `GET /api/v1/novadrive/performance/vendedores`
 - `POST /api/v1/chat`
 
 ### O que já está real hoje
@@ -33,6 +37,9 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - listagem de datasets via Unity Catalog
 - detalhe de dataset via Unity Catalog
 - colunas reais dos datasets via Unity Catalog
+- datasets analíticos da Novadrive materializados em BigQuery
+- endpoints reais de faturamento por concessionária e performance de vendedores
+- chat respondendo perguntas sobre indicadores da Novadrive
 - chat respondendo perguntas sobre datasets explícitos como `samples.tpch.orders`
 - chat respondendo owner e colunas de datasets reais
 
@@ -41,6 +48,7 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - jobs usam mock quando o workspace Databricks ainda não possui jobs reais
 - lineage usa mock quando o workspace Databricks não expõe uma API utilizável
 - o chat ainda usa roteamento determinístico e fontes estruturadas, não um fluxo completo com LLM + RAG
+- a ingestão da Novadrive ainda está em fase de estabilização operacional no Cloud Composer
 
 ## Direção do Produto
 
@@ -61,11 +69,55 @@ Evolução desejada:
 
 ## Arquitetura de Alto Nível
 
-- Fontes: Databricks Unity Catalog, Databricks Jobs, metadados operacionais, documentação interna e futuros sinais da plataforma
-- Bronze: metadados brutos e registros operacionais brutos
-- Silver: datasets, colunas, incidentes, lineage, documentos e owners normalizados
-- Gold: visões voltadas para API e ativos prontos para retrieval
-- Camada de produto: serviços FastAPI, frontend React, CI/CD, infraestrutura Terraform e futuros fluxos de RAG
+- Fontes: PostgreSQL da Novadrive, Databricks Unity Catalog, Databricks Jobs, metadados operacionais, documentação interna e futuros sinais da plataforma
+- Bronze: dados brutos e alinhados à origem, incluindo extrações da Novadrive em GCS e tabelas bronze no BigQuery
+- Silver: entidades normalizadas e enriquecidas, incluindo a tabela `silver_novadrive.vendas`
+- Gold: visões analíticas e product-facing, incluindo `gold_novadrive.faturamento_por_concessionaria` e `gold_novadrive.performance_vendedores`
+- Camada de produto: serviços FastAPI, frontend React, CI/CD, infraestrutura Terraform, Cloud Composer e futuros fluxos de RAG
+
+## Arquitetura Medalhão
+
+O projeto segue uma arquitetura medalhão para organizar ingestão, curadoria e consumo analítico:
+
+- `Bronze`: preserva a fidelidade da origem e a rastreabilidade da ingestão
+- `Silver`: padroniza entidades e aplica regras de negócio
+- `Gold`: expõe modelos analíticos e ativos prontos para API e copiloto
+
+Fluxo principal atual da Novadrive:
+
+```text
+PostgreSQL Novadrive
+        |
+        v
+Extração incremental no Cloud Composer
+        |
+        v
+GCS Bronze + BigQuery Bronze
+        |
+        v
+BigQuery Silver
+        |
+        v
+BigQuery Gold
+        |
+        v
+FastAPI / Chat / Frontend Demo
+```
+
+Camadas e ativos principais da Novadrive:
+
+- `bronze_novadrive`: dados brutos extraídos do PostgreSQL
+- `silver_novadrive.vendas`: visão consolidada e normalizada de vendas
+- `gold_novadrive.faturamento_por_concessionaria`: agregado analítico por concessionária
+- `gold_novadrive.performance_vendedores`: agregado analítico por vendedor
+
+Arquivos relacionados:
+
+- [pipelines/ingestion/novadrive_postgres_ingestion.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/ingestion/novadrive_postgres_ingestion.py)
+- [pipelines/ingestion/novadrive_bronze_to_bigquery.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/ingestion/novadrive_bronze_to_bigquery.py)
+- [pipelines/metadata/novadrive/01_silver_vendas.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/01_silver_vendas.sql)
+- [pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql)
+- [pipelines/metadata/novadrive/03_gold_performance_vendedores.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/03_gold_performance_vendedores.sql)
 
 Documentação de referência:
 
@@ -176,6 +228,7 @@ Hoje o frontend suporta:
 - lista de datasets da API real
 - detalhe do dataset com colunas reais
 - painel de jobs
+- visualização indireta dos indicadores da Novadrive via chat e endpoints da API
 - card de destaque para dataset principal
 
 Para rodar localmente:
@@ -206,6 +259,7 @@ Cobertura atual inclui:
 - fluxo de dataset repository e dataset detail
 - fallback de jobs
 - fallback de lineage
+- endpoints e service layer da Novadrive
 - roteamento do chat para owner, colunas, jobs e resposta fallback
 
 Os testes do backend limpam variáveis do Databricks quando necessário para manter o comportamento mock determinístico.
@@ -250,6 +304,7 @@ O Terraform do ambiente `dev` provisiona:
 - secret no Secret Manager para credenciais do Databricks
 - serviço Cloud Run para a API
 - ambiente Cloud Composer para orquestração
+- datasets BigQuery `bronze_novadrive`, `silver_novadrive` e `gold_novadrive`
 
 Stack principal:
 
@@ -269,6 +324,8 @@ terraform apply -var-file=terraform.tfvars
 
 O ambiente `dev` está sendo preparado para usar Cloud Composer 2 como camada de orquestração.
 
+O pipeline principal já modelado no repositório é o da Novadrive, com extração incremental de PostgreSQL para Bronze e transformação até Silver e Gold.
+
 Mudanças recentes no Terraform:
 
 - criação fixa da service account do Composer em vez de depender de condição implícita
@@ -280,6 +337,12 @@ Mudanças recentes no Terraform:
 - `web_server` pequeno
 - `worker` com `min_count = 1` e `max_count = 2`
 - `triggerer` desabilitado por enquanto
+
+Ativos do Composer já criados no repositório:
+
+- DAG `novadrive_medallion_pipeline`
+- SQLs de Silver e Gold para a Novadrive
+- documentação operacional de variables e connection do Composer
 
 Arquivos principais:
 
@@ -311,6 +374,7 @@ Leitura atual:
 - concluir o provisionamento do Cloud Composer com quota suficiente
 - publicar DAGs em [orchestration/composer/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer)
 - conectar os pipelines de ingestão e metadados ao Composer
+- substituir a execução local/manual da Novadrive por execução orquestrada e rastreável
 - evoluir de fallback/mock para fluxos orquestrados de ponta a ponta
 
 ## Endpoints do Ambiente Dev
@@ -338,11 +402,16 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - cliente Databricks para datasets, detalhe de dataset, jobs e runs
 - fallback seguro de fontes reais para mock quando necessário
 - integração real com Databricks para datasets e colunas
+- endpoints da Novadrive sobre BigQuery Gold
+- service layer e repositório da Novadrive para indicadores analíticos
+- pipeline medalhão da Novadrive em código, com ingestão PostgreSQL -> Bronze -> Silver -> Gold
+- DAG `novadrive_medallion_pipeline` no Composer
 - módulos Terraform e ambiente `dev` no GCP
 - deploy da API no Cloud Run
 - workflows de CI e deploy no GitHub Actions
 - frontend demo em React conectado ao backend real
 - melhoria do chat para resolver datasets explícitos e responder colunas
+- melhoria do chat para responder perguntas sobre indicadores da Novadrive
 - suporte local a CORS para desenvolvimento com Vite
 
 ## Próximos Passos Sugeridos
