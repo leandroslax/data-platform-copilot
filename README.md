@@ -325,7 +325,7 @@ O Terraform do ambiente `dev` provisiona:
 - grant `roles/composer.ServiceAgentV2Ext` para o service agent do Composer
 - secret no Secret Manager para credenciais do Databricks
 - serviço Cloud Run para a API
-- ambiente Cloud Composer para orquestração
+- configuração de Cloud Composer no Terraform, hoje ainda não operacional por quota
 - datasets BigQuery `bronze_novadrive`, `silver_novadrive` e `gold_novadrive`
 
 Stack principal:
@@ -344,7 +344,7 @@ terraform apply -var-file=terraform.tfvars
 
 ## Cloud Composer
 
-O ambiente `dev` está sendo preparado para usar Cloud Composer 2 como camada de orquestração.
+O Cloud Composer 2 foi preparado no Terraform como opção de orquestração gerenciada, mas não ficou operacional neste projeto por bloqueio de quota do Compute Engine/GKE.
 
 O pipeline principal já modelado no repositório é o da Novadrive, com extração incremental de PostgreSQL para Bronze e transformação até Silver e Gold.
 
@@ -360,7 +360,7 @@ Mudanças recentes no Terraform:
 - `worker` com `min_count = 1` e `max_count = 2`
 - `triggerer` desabilitado por enquanto
 
-Ativos do Composer já criados no repositório:
+Ativos do Composer preparados no repositório:
 
 - DAG `novadrive_medallion_pipeline`
 - SQLs de Silver e Gold para a Novadrive
@@ -452,7 +452,7 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - endpoints da Novadrive sobre BigQuery Gold
 - service layer e repositório da Novadrive para indicadores analíticos
 - pipeline medalhão da Novadrive em código, com ingestão PostgreSQL -> Bronze -> Silver -> Gold
-- DAG `novadrive_medallion_pipeline` no Composer
+- DAG `novadrive_medallion_pipeline` preparada para Composer
 - runtime local de Apache Airflow via Docker para executar a DAG da Novadrive
 - módulos Terraform e ambiente `dev` no GCP
 - deploy da API no Cloud Run
