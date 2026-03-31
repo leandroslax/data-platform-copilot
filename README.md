@@ -133,16 +133,37 @@ Documentação de referência:
 .
 ├── app/
 │   └── api/
+│       ├── clients/
+│       ├── core/
+│       ├── repositories/
+│       ├── routes/
+│       ├── schemas/
+│       └── services/
 ├── docs/
 ├── infra/
 │   └── terraform/
+│       ├── envs/
+│       │   └── dev/
+│       └── modules/
+│           ├── bigquery_dataset/
+│           └── composer_environment/
+├── orchestration/
+│   └── composer/
+│       ├── dags/
+│       └── README.md
 ├── pipelines/
 │   ├── embeddings/
 │   ├── ingestion/
+│   │   └── state/
 │   └── metadata/
+│       └── novadrive/
 ├── tests/
+│   └── api/
 ├── web/
+│   ├── public/
+│   └── src/
 ├── Dockerfile
+├── requirements.txt
 └── README.md
 ```
 
