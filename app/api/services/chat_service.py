@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from typing import Iterable, Optional
 
 from app.api.repositories.dataset_repository import list_datasets as list_dataset_records
@@ -53,16 +54,21 @@ STOPWORDS = {
 DATASET_ID_PATTERN = re.compile(r"\b[a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_]+\b")
 
 
+def _normalize_text(text: str) -> str:
+    normalized = unicodedata.normalize("NFKD", text.lower())
+    return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
 def _tokenize(text: str) -> set[str]:
     return {
         token
-        for token in re.findall(r"[a-z0-9_]+", text.lower())
+        for token in re.findall(r"[a-z0-9_]+", _normalize_text(text))
         if len(token) > 1 and token not in STOPWORDS
     }
 
 
 def _pick_best_match(records: Iterable[dict], question: str, id_key: str, name_key: str) -> Optional[dict]:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     tokens = _tokenize(question)
     best_match = None
     best_score = 0
@@ -89,7 +95,7 @@ def _pick_best_match(records: Iterable[dict], question: str, id_key: str, name_k
 
 
 def _resolve_dataset(question: str):
-    explicit_match = DATASET_ID_PATTERN.search(question.lower())
+    explicit_match = DATASET_ID_PATTERN.search(_normalize_text(question))
     if explicit_match:
         return get_dataset(explicit_match.group(0))
 
@@ -111,12 +117,12 @@ def _resolve_job(question: str):
 
 
 def _answers_about_columns(question: str) -> bool:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     return any(keyword in normalized_question for keyword in {"coluna", "colunas", "columns", "schema"})
 
 
 def _answers_about_lineage(question: str) -> bool:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     return any(
         keyword in normalized_question
         for keyword in {"lineage", "upstream", "upstreams", "downstream", "dependencia", "dependencias"}
@@ -124,12 +130,12 @@ def _answers_about_lineage(question: str) -> bool:
 
 
 def _answers_about_owner(question: str) -> bool:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     return any(keyword in normalized_question for keyword in {"owner", "dono", "responsavel"})
 
 
 def _answers_about_job(question: str) -> bool:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     return any(
         keyword in normalized_question
         for keyword in {"job", "pipeline", "erro", "error", "incidente", "incident", "status"}
@@ -137,7 +143,7 @@ def _answers_about_job(question: str) -> bool:
 
 
 def _answers_about_novadrive(question: str) -> bool:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     return any(
         keyword in normalized_question
         for keyword in {
@@ -157,7 +163,7 @@ def _answers_about_novadrive(question: str) -> bool:
 
 
 def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
 
     if "concessionaria" in normalized_question or "concessionarias" in normalized_question:
         ranking = list_faturamento_por_concessionaria(limit=5)
@@ -205,7 +211,7 @@ def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
 
 
 def answer_question(question: str) -> ChatResponse:
-    normalized_question = question.lower()
+    normalized_question = _normalize_text(question)
     explicit_dataset_match = DATASET_ID_PATTERN.search(normalized_question)
 
     if _answers_about_novadrive(question) and explicit_dataset_match is None:

@@ -170,6 +170,40 @@ def test_chat_answers_novadrive_concessionaria_question(monkeypatch) -> None:
     assert payload["sources"][0]["id"] == "faturamento_por_concessionaria"
 
 
+def test_chat_answers_novadrive_concessionaria_question_with_accents(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "list_faturamento_por_concessionaria",
+        lambda limit: FaturamentoConcessionariaResponse(
+            items=[
+                FaturamentoConcessionariaItem(
+                    id_concessionarias=13,
+                    concessionaria="Concessionária NovaDrive Motors Belo Horizonte",
+                    cidade="Belo Horizonte",
+                    estado="Minas Gerais",
+                    sigla_estado="MG",
+                    total_vendas=134,
+                    faturamento_total=45565767.28,
+                    ticket_medio=340043.03,
+                )
+            ],
+            total=1,
+            limit=limit,
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Quais concessionárias lideram o faturamento da Novadrive?"},
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert "Belo Horizonte" in payload["answer"]
+    assert payload["sources"][0]["id"] == "faturamento_por_concessionaria"
+
+
 def test_chat_answers_novadrive_vendedor_question(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_service,
