@@ -10,6 +10,9 @@ class Settings(BaseModel):
     databricks_host: str = os.getenv("DATABRICKS_HOST", "")
     databricks_token: str = os.getenv("DATABRICKS_TOKEN", "")
     databricks_catalog: str = os.getenv("DATABRICKS_CATALOG", "main")
+    bigquery_project_id: str = os.getenv("BIGQUERY_PROJECT_ID", "data-platform-copilot-dev")
+    novadrive_silver_dataset: str = os.getenv("NOVADRIVE_SILVER_DATASET", "silver_novadrive")
+    novadrive_gold_dataset: str = os.getenv("NOVADRIVE_GOLD_DATASET", "gold_novadrive")
 
 
 settings = Settings()

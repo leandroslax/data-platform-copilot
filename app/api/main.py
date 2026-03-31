@@ -7,6 +7,7 @@ from app.api.routes.datasets import router as datasets_router
 from app.api.routes.health import router as health_router
 from app.api.routes.jobs import router as jobs_router
 from app.api.routes.lineage import router as lineage_router
+from app.api.routes.novadrive import router as novadrive_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -34,3 +35,4 @@ app.include_router(datasets_router, prefix="/api/v1", tags=["datasets"])
 app.include_router(lineage_router, prefix="/api/v1", tags=["lineage"])
 app.include_router(jobs_router, prefix="/api/v1", tags=["jobs"])
 app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
+app.include_router(novadrive_router, prefix="/api/v1", tags=["novadrive"])
