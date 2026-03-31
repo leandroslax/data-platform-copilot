@@ -6,6 +6,7 @@ Hoje o projeto já entrega um MVP funcional com:
 
 - backend FastAPI publicado no Cloud Run
 - infraestrutura GCP gerenciada com Terraform
+- orquestração em evolução com Cloud Composer
 - CI/CD com GitHub Actions
 - frontend demo em React + Vite
 - descoberta real de datasets e detalhes de datasets via Databricks
@@ -14,6 +15,8 @@ Hoje o projeto já entrega um MVP funcional com:
 ## Status Atual
 
 A plataforma já está utilizável de ponta a ponta para demo e validação técnica.
+
+Na infraestrutura `dev`, o backend e os componentes-base já estão provisionados. A camada de orquestração com Cloud Composer está sendo estabilizada no Terraform e passou por troubleshooting de IAM, naming e quota do GKE durante a criação do ambiente.
 
 ### Backend
 
@@ -242,8 +245,11 @@ O Terraform do ambiente `dev` provisiona:
 - repositório no Artifact Registry
 - bucket de artefatos no Cloud Storage
 - service account de runtime
+- service account dedicada ao Cloud Composer
+- grant `roles/composer.ServiceAgentV2Ext` para o service agent do Composer
 - secret no Secret Manager para credenciais do Databricks
 - serviço Cloud Run para a API
+- ambiente Cloud Composer para orquestração
 
 Stack principal:
 
@@ -258,6 +264,54 @@ terraform validate
 terraform plan -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
+
+## Cloud Composer
+
+O ambiente `dev` está sendo preparado para usar Cloud Composer 2 como camada de orquestração.
+
+Mudanças recentes no Terraform:
+
+- criação fixa da service account do Composer em vez de depender de condição implícita
+- grant explícito de `roles/composer.ServiceAgentV2Ext` para o service agent do Composer
+- espera de propagação de IAM antes da criação do ambiente
+- módulo do Composer ajustado para um perfil mais econômico e explícito
+- `ENVIRONMENT_SIZE_SMALL`
+- `scheduler` pequeno com `count = 1`
+- `web_server` pequeno
+- `worker` com `min_count = 1` e `max_count = 2`
+- `triggerer` desabilitado por enquanto
+
+Arquivos principais:
+
+- [infra/terraform/envs/dev/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/envs/dev/main.tf)
+- [infra/terraform/envs/dev/variables.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/envs/dev/variables.tf)
+- [infra/terraform/modules/composer_environment/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/modules/composer_environment/main.tf)
+- [orchestration/composer/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer/README.md)
+
+## Troubleshooting Recente
+
+Durante a criação do Composer em `us-central1`, os logs indicaram que o problema principal deixou de ser IAM e passou a ser capacidade/quota do GKE/Compute Engine.
+
+Sinais observados:
+
+- `Node scale up ... failed: GCE quota exceeded`
+- `Pod didn't trigger scale-up ... in backoff`
+- `Too many pods`
+- `node(s) didn't match pod anti-affinity rules`
+- `ProgressDeadlineExceeded` para `airflow-webserver`, `airflow-scheduler` e `worker-set`
+
+Leitura atual:
+
+- o Terraform e os grants de IAM necessários para o Composer foram alinhados
+- o gargalo mais importante passou a ser quota para scale-up de nós durante o provisionamento do ambiente
+- quotas prioritárias para revisão em `us-central1`: `INSTANCES`, `CPUS`, `E2_CPUS`, `N2D_CPUS` e `N2A_CPUS`
+
+## Próximos Passos
+
+- concluir o provisionamento do Cloud Composer com quota suficiente
+- publicar DAGs em [orchestration/composer/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer)
+- conectar os pipelines de ingestão e metadados ao Composer
+- evoluir de fallback/mock para fluxos orquestrados de ponta a ponta
 
 ## Endpoints do Ambiente Dev
 
