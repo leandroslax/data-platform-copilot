@@ -38,10 +38,11 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - detalhe de dataset via Unity Catalog
 - colunas reais dos datasets via Unity Catalog
 - datasets analíticos da Novadrive materializados em BigQuery
+- detalhe e colunas de tabelas da Novadrive via metadados do BigQuery
 - endpoints reais de faturamento por concessionária e performance de vendedores
 - chat respondendo perguntas sobre indicadores da Novadrive
 - chat respondendo perguntas sobre datasets explícitos como `samples.tpch.orders`
-- chat respondendo owner e colunas de datasets reais
+- chat respondendo owner e colunas de datasets reais, incluindo tabelas BigQuery da Novadrive
 
 ### O que ainda usa fallback
 
