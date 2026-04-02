@@ -437,11 +437,23 @@ Exemplos:
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/health
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/datasets
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/datasets/samples.tpch.orders
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/datasets/data-platform-copilot-dev.silver_novadrive.vendas
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/jobs
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/lineage/main.sales.orders
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/concessionarias
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/performance/vendedores
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"Quais colunas existem em samples.tpch.orders?"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Quais colunas existem em data-platform-copilot-dev.silver_novadrive.vendas?"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Quais concessionárias lideram o faturamento da Novadrive?"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Quais vendedores têm melhor performance na Novadrive?"}'
 ```
 
 ## O que já foi implementado
