@@ -1,6 +1,7 @@
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
+from app.api.clients.bigquery_client import BigQueryClient
 from app.api.clients.databricks_client import DatabricksClient
 from app.api.services.mock_data import DATASETS
 
@@ -53,6 +54,11 @@ def find_dataset_by_id(dataset_id: str) -> Optional[Dict[str, Any]]:
         dataset = client.get_table(dataset_id)
         if dataset:
             return _normalize_dataset_record(dataset)
+
+    bigquery_client = BigQueryClient()
+    dataset = bigquery_client.get_table(dataset_id)
+    if dataset:
+        return _normalize_dataset_record(dataset)
 
     for dataset in _get_dataset_source():
         if dataset["dataset_id"] == dataset_id:

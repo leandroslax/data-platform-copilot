@@ -51,7 +51,7 @@ STOPWORDS = {
     "vendas",
 }
 
-DATASET_ID_PATTERN = re.compile(r"\b[a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_]+\b")
+DATASET_ID_PATTERN = re.compile(r"\b[a-z0-9_][a-z0-9_-]*\.[a-z0-9_]+\.[a-z0-9_]+\b")
 
 
 def _normalize_text(text: str) -> str:

@@ -111,3 +111,47 @@ def test_find_dataset_by_id_reads_detail_from_databricks_when_configured(monkeyp
     assert dataset is not None
     assert dataset["dataset_id"] == "samples.tpch.orders"
     assert dataset["columns"][0]["name"] == "o_orderkey"
+
+
+def test_find_dataset_by_id_reads_detail_from_bigquery_when_databricks_does_not_match(monkeypatch) -> None:
+    class StubDatabricksClient:
+        def is_configured(self) -> bool:
+            return False
+
+        def get_tables(self):
+            return []
+
+    class StubBigQueryClient:
+        def get_table(self, dataset_id: str):
+            if dataset_id != "data-platform-copilot-dev.silver_novadrive.vendas":
+                return None
+
+            return {
+                "dataset_id": dataset_id,
+                "name": dataset_id,
+                "catalog": "data-platform-copilot-dev",
+                "schema": "silver_novadrive",
+                "table": "vendas",
+                "type": "table",
+                "description": "Tabela silver de vendas",
+                "owner": None,
+                "columns": [
+                    {
+                        "name": "id_venda",
+                        "data_type": "INT64",
+                        "nullable": False,
+                        "description": None,
+                    }
+                ],
+                "documentation": [],
+            }
+
+    monkeypatch.setattr(dataset_repository, "DatabricksClient", StubDatabricksClient)
+    monkeypatch.setattr(dataset_repository, "BigQueryClient", StubBigQueryClient)
+
+    dataset = dataset_repository.find_dataset_by_id("data-platform-copilot-dev.silver_novadrive.vendas")
+
+    assert dataset is not None
+    assert dataset["dataset_id"] == "data-platform-copilot-dev.silver_novadrive.vendas"
+    assert dataset["schema"] == "silver_novadrive"
+    assert dataset["columns"][0]["name"] == "id_venda"

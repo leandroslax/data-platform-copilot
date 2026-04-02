@@ -136,6 +136,56 @@ def test_chat_answers_dataset_columns_question(monkeypatch) -> None:
     ]
 
 
+def test_chat_answers_bigquery_dataset_columns_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "get_dataset",
+        lambda dataset_id: DatasetDetailResponse(
+            dataset_id=dataset_id,
+            name=dataset_id,
+            catalog="data-platform-copilot-dev",
+            schema="silver_novadrive",
+            table="vendas",
+            type="table",
+            description="Tabela silver de vendas",
+            owner=None,
+            columns=[
+                DatasetColumn(name="id_venda", data_type="INT64", nullable=False, description=None),
+                DatasetColumn(name="data_venda", data_type="TIMESTAMP", nullable=True, description=None),
+            ],
+            documentation=[],
+        ),
+    )
+    monkeypatch.setattr(
+        chat_service,
+        "get_lineage",
+        lambda dataset_id: LineageResponse(
+            dataset_id=dataset_id,
+            upstream=[],
+            downstream=[],
+            related_jobs=[],
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Quais colunas existem em data-platform-copilot-dev.silver_novadrive.vendas?"},
+    )
+
+    assert response.status_code == 200
+
+    payload = response.json()
+    assert "data-platform-copilot-dev.silver_novadrive.vendas" in payload["answer"]
+    assert "id_venda" in payload["answer"]
+    assert payload["sources"] == [
+        {
+            "type": "dataset",
+            "id": "data-platform-copilot-dev.silver_novadrive.vendas",
+            "label": "Metadados do dataset",
+        }
+    ]
+
+
 def test_chat_answers_novadrive_concessionaria_question(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_service,
