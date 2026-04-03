@@ -676,3 +676,33 @@ Hoje o projeto já cobre:
 - observabilidade local com Prometheus e Grafana
 - frontend demo local em React conectado ao backend real ou ao backend local
 - frontend demo preparado para publicação estática com GitHub Pages usando o backend publicado no Cloud Run
+
+## Roadmap do Produto
+
+Os itens abaixo representam evoluções planejadas. Eles ainda não fazem parte do escopo já entregue e servem como próximos incrementos naturais para transformar o projeto em um produto mais completo.
+
+### Prioridade 1
+
+- publicar o frontend demo oficialmente em ambiente público
+- adicionar autenticação para o copilot
+- criar histórico de conversas por usuário
+- melhorar citações e fontes do chat
+- automatizar a sincronização de catálogo e documentação
+
+### Prioridade 2
+
+- adicionar feedback de resposta útil ou não útil
+- criar filtros por owner, domínio e ambiente
+- expandir perguntas históricas e comparativas no chat
+- conectar lineage real no copilot
+- avaliar a qualidade do copilot com testes dedicados
+- monitorar custo e latência do produto
+
+### Prioridade 3
+
+- adicionar SSO
+- implementar RBAC por dataset e domínio
+- registrar auditoria completa de acessos e perguntas
+- aplicar governança e masking de dados
+- adicionar analytics de produto
+- evoluir a experiência para uso enterprise multi-time
