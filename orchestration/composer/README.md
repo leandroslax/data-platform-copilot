@@ -1,6 +1,8 @@
 # Cloud Composer
 
-Esta pasta concentra os artefatos de orquestracao do projeto no Cloud Composer.
+Esta pasta mantém uma referência técnica dos artefatos de orquestração originalmente preparados para Cloud Composer.
+
+O Cloud Composer foi descartado como caminho operacional neste projeto. A execução oficial da DAG acontece em Apache Airflow local via Docker, mas os arquivos desta pasta continuam úteis como referência da DAG e das SQLs.
 
 ## DAG principal
 
@@ -20,7 +22,7 @@ Fluxo:
 - `dags/sql/02_gold_faturamento_por_concessionaria.sql`
 - `dags/sql/03_gold_performance_vendedores.sql`
 
-## Pre-requisitos no Composer
+## Referência de configuração no Composer
 
 Antes da primeira execucao, configure:
 
@@ -60,7 +62,7 @@ Valores recomendados em `dev`:
 
 ## Publicacao da DAG
 
-Quando o Composer estiver `RUNNING`, publique os arquivos para o bucket do ambiente:
+Se esta estrutura vier a ser reutilizada em outro ambiente com Composer disponível, publique os arquivos para o bucket do ambiente:
 
 ```bash
 gcloud storage cp \

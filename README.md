@@ -20,7 +20,7 @@ Hoje o projeto já entrega um MVP funcional com:
 
 A plataforma já está utilizável de ponta a ponta para demo e validação técnica.
 
-Na infraestrutura `dev`, o backend e os componentes-base já estão provisionados. A camada de orquestração com Cloud Composer passou por troubleshooting de IAM, naming e quota do GKE durante a criação do ambiente. Enquanto o Composer fica em standby por quota, a pipeline da Novadrive já foi validada ponta a ponta em Apache Airflow local via Docker.
+Na infraestrutura `dev`, o backend e os componentes-base já estão provisionados. A solução oficial de orquestração deste projeto é o Apache Airflow local via Docker, onde a pipeline da Novadrive já foi validada ponta a ponta.
 
 ### Backend
 
@@ -51,7 +51,6 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - jobs usam mock quando o workspace Databricks ainda não possui jobs reais
 - lineage usa mock quando o workspace Databricks não expõe uma API utilizável
 - o chat ainda usa roteamento determinístico e fontes estruturadas, não um fluxo completo com LLM + RAG
-- o Cloud Composer ainda está em standby por quota de Compute Engine/GKE
 
 ## Direção do Produto
 
@@ -378,11 +377,8 @@ O Terraform do ambiente `dev` provisiona:
 - repositório no Artifact Registry
 - bucket de artefatos no Cloud Storage
 - service account de runtime
-- service account dedicada ao Cloud Composer
-- grant `roles/composer.ServiceAgentV2Ext` para o service agent do Composer
 - secret no Secret Manager para credenciais do Databricks
 - serviço Cloud Run para a API
-- configuração de Cloud Composer no Terraform, hoje ainda não operacional por quota
 - datasets BigQuery `bronze_novadrive`, `silver_novadrive` e `gold_novadrive`
 
 Stack principal:
@@ -399,40 +395,15 @@ terraform plan -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
 
-## Cloud Composer
+## Orquestração Oficial
 
-O Cloud Composer 2 foi preparado no Terraform como opção de orquestração gerenciada, mas não ficou operacional neste projeto por bloqueio de quota do Compute Engine/GKE.
+O caminho oficial de orquestração deste projeto é o Apache Airflow local via Docker.
 
-O pipeline principal já modelado no repositório é o da Novadrive, com extração incremental de PostgreSQL para Bronze e transformação até Silver e Gold.
-
-Mudanças recentes no Terraform:
-
-- criação fixa da service account do Composer em vez de depender de condição implícita
-- grant explícito de `roles/composer.ServiceAgentV2Ext` para o service agent do Composer
-- espera de propagação de IAM antes da criação do ambiente
-- módulo do Composer ajustado para um perfil mais econômico e explícito
-- `ENVIRONMENT_SIZE_SMALL`
-- `scheduler` pequeno com `count = 1`
-- `web_server` pequeno
-- `worker` com `min_count = 1` e `max_count = 2`
-- `triggerer` desabilitado por enquanto
-
-Ativos do Composer preparados no repositório:
-
-- DAG `novadrive_medallion_pipeline`
-- SQLs de Silver e Gold para a Novadrive
-- documentação operacional de variables e connection do Composer
-
-Arquivos principais:
-
-- [infra/terraform/envs/dev/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/envs/dev/main.tf)
-- [infra/terraform/envs/dev/variables.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/envs/dev/variables.tf)
-- [infra/terraform/modules/composer_environment/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/modules/composer_environment/main.tf)
-- [orchestration/composer/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer/README.md)
+Os artefatos em [orchestration/composer/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer/) permanecem no repositório apenas como referência técnica da DAG e das SQLs, mas o Cloud Composer foi descartado como opção operacional neste projeto.
 
 ## Airflow Local
 
-Como workaround para o bloqueio de quota do Composer, o projeto agora possui um runtime local de Apache Airflow via Docker em [orchestration/airflow/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow).
+O projeto possui um runtime local oficial de Apache Airflow via Docker em [orchestration/airflow/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow).
 
 Esse ambiente já foi validado com a DAG `novadrive_medallion_pipeline`, executando com sucesso:
 
@@ -461,31 +432,14 @@ Arquivos principais:
 - [orchestration/airflow/requirements-airflow.txt](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/requirements-airflow.txt)
 - [orchestration/airflow/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/README.md)
 
-## Troubleshooting Recente
-
-Durante a criação do Composer em `us-central1`, os logs indicaram que o problema principal deixou de ser IAM e passou a ser capacidade/quota do GKE/Compute Engine.
-
-Sinais observados:
-
-- `Node scale up ... failed: GCE quota exceeded`
-- `Pod didn't trigger scale-up ... in backoff`
-- `Too many pods`
-- `node(s) didn't match pod anti-affinity rules`
-- `ProgressDeadlineExceeded` para `airflow-webserver`, `airflow-scheduler` e `worker-set`
-
-Leitura atual:
-
-- o Terraform e os grants de IAM necessários para o Composer foram alinhados
-- o gargalo mais importante passou a ser quota para scale-up de nós durante o provisionamento do ambiente
-- quotas prioritárias para revisão em `us-central1`: `INSTANCES`, `CPUS`, `E2_CPUS`, `N2D_CPUS` e `N2A_CPUS`
-
 ## Próximos Passos
 
-- manter a operação da Novadrive no Airflow local enquanto o Composer estiver bloqueado por quota
-- concluir o provisionamento do Cloud Composer com quota suficiente
-- publicar DAGs em [orchestration/composer/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer)
-- migrar a DAG validada no Airflow local para o Composer quando a quota estiver disponível
 - evoluir de fallback/mock para fluxos orquestrados de ponta a ponta
+- persistir metadados ingeridos fora das chamadas diretas da API
+- expandir o chat para perguntas mais amplas sobre o ambiente, como consultas por owner
+- adicionar retrieval semântico e embeddings
+- conectar o copilot a um LLM para síntese grounded de respostas
+- publicar o frontend demo
 
 ## Endpoints do Ambiente Dev
 
@@ -527,7 +481,6 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - endpoints da Novadrive sobre BigQuery Gold
 - service layer e repositório da Novadrive para indicadores analíticos
 - pipeline medalhão da Novadrive em código, com ingestão PostgreSQL -> Bronze -> Silver -> Gold
-- DAG `novadrive_medallion_pipeline` preparada para Composer
 - runtime local de Apache Airflow via Docker para executar a DAG da Novadrive
 - stack local de observabilidade com Prometheus, Grafana, cAdvisor e postgres-exporter
 - dashboard executivo da Novadrive com receita, geografia, ranking comercial e ticket médio
@@ -544,7 +497,6 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 
 ## Próximos Passos Sugeridos
 
-- migrar a operação validada no Airflow local para o Cloud Composer quando a quota do projeto permitir
 - persistir metadados ingeridos fora das chamadas diretas da API
 - expandir o chat para perguntas mais amplas sobre o ambiente, como consultas por owner
 - adicionar retrieval semântico e embeddings

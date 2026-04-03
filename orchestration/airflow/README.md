@@ -1,6 +1,6 @@
 # Apache Airflow via Docker
 
-Esta pasta oferece uma alternativa local ao Cloud Composer para desenvolvimento e validacao das DAGs do projeto.
+Esta pasta concentra a solução oficial de orquestração do projeto para desenvolvimento e operação local das DAGs.
 
 ## Objetivo
 
@@ -9,7 +9,7 @@ Usar Apache Airflow via Docker Compose para:
 - subir um ambiente local de orquestracao
 - validar a DAG `novadrive_medallion_pipeline`
 - testar integracoes com PostgreSQL, GCS e BigQuery
-- continuar a evolucao do pipeline enquanto o Cloud Composer estiver bloqueado por quota
+- operar e evoluir o pipeline medalhão da Novadrive localmente
 
 ## Estrutura
 
