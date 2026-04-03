@@ -159,22 +159,22 @@ Observação importante sobre qualidade de dados:
 
 Arquivos relacionados:
 
-- [pipelines/ingestion/novadrive_postgres_ingestion.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/ingestion/novadrive_postgres_ingestion.py)
-- [pipelines/ingestion/novadrive_bronze_to_bigquery.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/ingestion/novadrive_bronze_to_bigquery.py)
-- [pipelines/metadata/novadrive/01_silver_vendas.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/01_silver_vendas.sql)
-- [pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql)
-- [pipelines/metadata/novadrive/03_gold_performance_vendedores.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/03_gold_performance_vendedores.sql)
-- [pipelines/metadata/novadrive/04_ml_receita_diaria_concessionarias.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/04_ml_receita_diaria_concessionarias.sql)
-- [pipelines/metadata/novadrive/05_ml_modelo_previsao_faturamento.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/05_ml_modelo_previsao_faturamento.sql)
-- [pipelines/metadata/novadrive/06_ml_previsao_faturamento_concessionarias.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/06_ml_previsao_faturamento_concessionarias.sql)
+- [pipelines/ingestion/novadrive_postgres_ingestion.py](pipelines/ingestion/novadrive_postgres_ingestion.py)
+- [pipelines/ingestion/novadrive_bronze_to_bigquery.py](pipelines/ingestion/novadrive_bronze_to_bigquery.py)
+- [pipelines/metadata/novadrive/01_silver_vendas.sql](pipelines/metadata/novadrive/01_silver_vendas.sql)
+- [pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql](pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql)
+- [pipelines/metadata/novadrive/03_gold_performance_vendedores.sql](pipelines/metadata/novadrive/03_gold_performance_vendedores.sql)
+- [pipelines/metadata/novadrive/04_ml_receita_diaria_concessionarias.sql](pipelines/metadata/novadrive/04_ml_receita_diaria_concessionarias.sql)
+- [pipelines/metadata/novadrive/05_ml_modelo_previsao_faturamento.sql](pipelines/metadata/novadrive/05_ml_modelo_previsao_faturamento.sql)
+- [pipelines/metadata/novadrive/06_ml_previsao_faturamento_concessionarias.sql](pipelines/metadata/novadrive/06_ml_previsao_faturamento_concessionarias.sql)
 
 Documentação de referência:
 
-- [docs/mvp.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/mvp.md)
-- [docs/architecture.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/architecture.md)
-- [docs/solution-architecture.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/solution-architecture.md)
-- [docs/data-model.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/data-model.md)
-- [docs/api-contract.md](/Users/leandrosantos/Downloads/data-platform-copilot/docs/api-contract.md)
+- [docs/mvp.md](docs/mvp.md)
+- [docs/architecture.md](docs/architecture.md)
+- [docs/solution-architecture.md](docs/solution-architecture.md)
+- [docs/data-model.md](docs/data-model.md)
+- [docs/api-contract.md](docs/api-contract.md)
 
 ## Estrutura do Repositório
 
@@ -356,7 +356,7 @@ Cobertura dos dashboards:
 
 Documentação detalhada:
 
-- [orchestration/observability/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/observability/README.md)
+- [orchestration/observability/README.md](orchestration/observability/README.md)
 
 Screenshots dos dashboards:
 
@@ -389,7 +389,7 @@ curl http://127.0.0.1:8000/api/v1/chat \
 
 ## Frontend Demo
 
-Existe um frontend demo em React + Vite em [web/](/Users/leandrosantos/Downloads/data-platform-copilot/web).
+Existe um frontend demo em React + Vite em [web/](web/).
 
 Links úteis do demo:
 
@@ -436,7 +436,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev -- --host 127.0.0.1 -
 
 Publicação:
 
-- o workflow de GitHub Pages está em [.github/workflows/deploy-frontend.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy-frontend.yml)
+- o workflow de GitHub Pages está em [.github/workflows/deploy-frontend.yml](.github/workflows/deploy-frontend.yml)
 - o build publicado usa o backend já implantado no Cloud Run
 
 ## Testes
@@ -473,7 +473,7 @@ O GitHub Actions CI hoje executa:
 
 Workflow:
 
-- [.github/workflows/ci.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/ci.yml)
+- [.github/workflows/ci.yml](.github/workflows/ci.yml)
 
 ### Deploy contínuo
 
@@ -485,8 +485,8 @@ Push em `main` dispara:
 
 Workflow:
 
-- [.github/workflows/deploy.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy.yml)
-- [.github/workflows/deploy-frontend.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy-frontend.yml)
+- [.github/workflows/deploy.yml](.github/workflows/deploy.yml)
+- [.github/workflows/deploy-frontend.yml](.github/workflows/deploy-frontend.yml)
 
 ## Infraestrutura
 
@@ -502,7 +502,7 @@ O Terraform do ambiente `dev` provisiona:
 
 Stack principal:
 
-- [infra/terraform/envs/dev/main.tf](/Users/leandrosantos/Downloads/data-platform-copilot/infra/terraform/envs/dev/main.tf)
+- [infra/terraform/envs/dev/main.tf](infra/terraform/envs/dev/main.tf)
 
 Aplicação local:
 
@@ -518,11 +518,11 @@ terraform apply -var-file=terraform.tfvars
 
 O caminho oficial de orquestração deste projeto é o Apache Airflow local via Docker.
 
-Os artefatos em [orchestration/composer/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/composer/) permanecem no repositório apenas como referência técnica da DAG e das SQLs, mas o Cloud Composer foi descartado como opção operacional neste projeto.
+Os artefatos em [orchestration/composer/](orchestration/composer/) permanecem no repositório apenas como referência técnica da DAG e das SQLs, mas o Cloud Composer foi descartado como opção operacional neste projeto.
 
 ## Airflow Local
 
-O projeto possui um runtime local oficial de Apache Airflow via Docker em [orchestration/airflow/](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow).
+O projeto possui um runtime local oficial de Apache Airflow via Docker em [orchestration/airflow/](orchestration/airflow/).
 
 Esse ambiente já foi validado com a DAG `novadrive_medallion_pipeline`, executando com sucesso:
 
@@ -549,20 +549,20 @@ Resultados observados após a correção:
 
 Arquivos principais:
 
-- [orchestration/airflow/docker-compose.yml](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/docker-compose.yml)
-- [orchestration/airflow/Dockerfile](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/Dockerfile)
-- [orchestration/airflow/requirements-airflow.txt](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/requirements-airflow.txt)
-- [orchestration/airflow/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/README.md)
+- [orchestration/airflow/docker-compose.yml](orchestration/airflow/docker-compose.yml)
+- [orchestration/airflow/Dockerfile](orchestration/airflow/Dockerfile)
+- [orchestration/airflow/requirements-airflow.txt](orchestration/airflow/requirements-airflow.txt)
+- [orchestration/airflow/README.md](orchestration/airflow/README.md)
 
 ## Novos Componentes do Copilot
 
-- [app/api/services/metadata_catalog_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/metadata_catalog_service.py)
-- [app/api/services/retrieval_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/retrieval_service.py)
-- [app/api/services/embedding_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/embedding_service.py)
-- [app/api/services/llm_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/llm_service.py)
-- [app/api/routes/search.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/routes/search.py)
-- [app/api/routes/metadata.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/routes/metadata.py)
-- [pipelines/metadata/sync_metadata_catalog.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/sync_metadata_catalog.py)
+- [app/api/services/metadata_catalog_service.py](app/api/services/metadata_catalog_service.py)
+- [app/api/services/retrieval_service.py](app/api/services/retrieval_service.py)
+- [app/api/services/embedding_service.py](app/api/services/embedding_service.py)
+- [app/api/services/llm_service.py](app/api/services/llm_service.py)
+- [app/api/routes/search.py](app/api/routes/search.py)
+- [app/api/routes/metadata.py](app/api/routes/metadata.py)
+- [pipelines/metadata/sync_metadata_catalog.py](pipelines/metadata/sync_metadata_catalog.py)
 
 Hoje essa camada cobre:
 

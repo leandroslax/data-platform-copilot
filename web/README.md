@@ -1,6 +1,6 @@
 # Frontend Demo
 
-O frontend demo em [web/](/Users/leandrosantos/Downloads/data-platform-copilot/web/) usa React + Vite para consumir a API do copilot.
+O frontend demo em [web/](.) usa React + Vite para consumir a API do copilot.
 
 ## O que ele mostra hoje
 
@@ -38,7 +38,7 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev -- --host 127.0.0.1 -
 
 O repositório agora inclui workflow de GitHub Pages em:
 
-- [.github/workflows/deploy-frontend.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy-frontend.yml)
+- [.github/workflows/deploy-frontend.yml](../.github/workflows/deploy-frontend.yml)
 
 No build automático de Pages, o frontend usa:
 
