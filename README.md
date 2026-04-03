@@ -361,10 +361,10 @@ Documentação detalhada:
 Screenshots dos dashboards:
 
 Visão Executiva da Novadrive:
-![Visão Executiva da Novadrive](/Users/leandrosantos/Downloads/data-platform-copilot/docs/images/grafana-novadrive-executive-overview.png)
+![Visão Executiva da Novadrive](docs/images/grafana-novadrive-executive-overview.png)
 
 Qualidade de Dados e Pipeline da Novadrive:
-![Qualidade de Dados e Pipeline da Novadrive](/Users/leandrosantos/Downloads/data-platform-copilot/docs/images/grafana-novadrive-data-quality-pipeline.png)
+![Qualidade de Dados e Pipeline da Novadrive](docs/images/grafana-novadrive-data-quality-pipeline.png)
 
 ## Rodando o Backend com Metadados Reais do Databricks
 
