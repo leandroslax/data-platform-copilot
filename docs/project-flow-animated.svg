@@ -1,0 +1,211 @@
+<svg width="1600" height="980" viewBox="0 0 1600 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="980" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B1020"/>
+      <stop offset="50%" stop-color="#10182B"/>
+      <stop offset="100%" stop-color="#09111D"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#131D34"/>
+      <stop offset="100%" stop-color="#0E172A"/>
+    </linearGradient>
+    <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7A4B1A"/>
+      <stop offset="100%" stop-color="#B76A22"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6E7A89"/>
+      <stop offset="100%" stop-color="#B5C0CB"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#C6931A"/>
+      <stop offset="100%" stop-color="#FFD05A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#47C9FF"/>
+      <stop offset="100%" stop-color="#5DFFB2"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#000814" flood-opacity="0.35"/>
+    </filter>
+    <style>
+      .title { font: 800 56px 'Inter', 'Segoe UI', sans-serif; fill: #F5F7FB; }
+      .subtitle { font: 400 24px 'Inter', 'Segoe UI', sans-serif; fill: #AAB8D6; }
+      .section { font: 700 22px 'Inter', 'Segoe UI', sans-serif; fill: #F5F7FB; }
+      .label { font: 700 28px 'Inter', 'Segoe UI', sans-serif; fill: #F8FAFC; }
+      .small { font: 500 18px 'Inter', 'Segoe UI', sans-serif; fill: #C7D2E8; }
+      .tiny { font: 600 15px 'Inter', 'Segoe UI', sans-serif; fill: #8FA3C8; letter-spacing: 1.4px; }
+      .box { filter: url(#shadow); }
+      .pulse {
+        transform-origin: center;
+        animation: pulse 3.8s ease-in-out infinite;
+      }
+      .glow {
+        animation: glow 4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+      }
+      @keyframes glow {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+      }
+      .particle {
+        fill: #5DFFB2;
+        opacity: 0;
+      }
+      .particle2 {
+        fill: #47C9FF;
+        opacity: 0;
+      }
+      .particle3 {
+        fill: #FFD05A;
+        opacity: 0;
+      }
+      .dash {
+        stroke-dasharray: 8 10;
+        animation: dashmove 18s linear infinite;
+      }
+      @keyframes dashmove {
+        from { stroke-dashoffset: 0; }
+        to { stroke-dashoffset: -360; }
+      }
+    </style>
+  </defs>
+
+  <rect width="1600" height="980" fill="url(#bg)"/>
+  <circle cx="190" cy="140" r="180" fill="#1A2440" opacity="0.33"/>
+  <circle cx="1410" cy="820" r="230" fill="#122337" opacity="0.28"/>
+  <circle cx="1210" cy="140" r="120" fill="#16294B" opacity="0.22"/>
+
+  <text x="86" y="92" class="title">Data Platform Copilot</text>
+  <text x="86" y="132" class="subtitle">Animated architecture flow for metadata, ingestion, analytics and product delivery</text>
+
+  <rect x="78" y="176" width="1444" height="728" rx="34" fill="#0D1627" opacity="0.62" stroke="#21304D"/>
+
+  <text x="116" y="232" class="section">Sources and Metadata</text>
+  <text x="612" y="232" class="section">Orchestration and Storage</text>
+  <text x="1122" y="232" class="section">Consumption Layer</text>
+
+  <g class="box pulse">
+    <rect x="110" y="276" width="330" height="150" rx="24" fill="url(#panel)" stroke="#2A3E63"/>
+    <text x="142" y="325" class="tiny">SOURCE SYSTEM</text>
+    <text x="142" y="365" class="label">PostgreSQL</text>
+    <text x="142" y="399" class="small">Novadrive transactional source</text>
+  </g>
+
+  <g class="box pulse">
+    <rect x="110" y="474" width="330" height="150" rx="24" fill="url(#panel)" stroke="#2A3E63"/>
+    <text x="142" y="523" class="tiny">METADATA SOURCE</text>
+    <text x="142" y="563" class="label">Databricks</text>
+    <text x="142" y="597" class="small">Unity Catalog datasets, owner and columns</text>
+  </g>
+
+  <g class="box pulse">
+    <rect x="110" y="672" width="330" height="150" rx="24" fill="url(#panel)" stroke="#2A3E63"/>
+    <text x="142" y="721" class="tiny">PIPELINE RUNTIME</text>
+    <text x="142" y="761" class="label">Apache Airflow</text>
+    <text x="142" y="795" class="small">Local Docker runtime, hourly DAG schedule</text>
+  </g>
+
+  <g class="box glow">
+    <rect x="540" y="276" width="240" height="150" rx="24" fill="url(#bronze)" stroke="#D38A32"/>
+    <text x="572" y="325" class="tiny">BRONZE LANDING</text>
+    <text x="572" y="365" class="label">GCS Bronze</text>
+    <text x="572" y="399" class="small">Raw JSONL extracts and checkpoints</text>
+  </g>
+
+  <g class="box glow">
+    <rect x="824" y="276" width="240" height="150" rx="24" fill="url(#bronze)" stroke="#D38A32"/>
+    <text x="856" y="325" class="tiny">RAW WAREHOUSE</text>
+    <text x="856" y="365" class="label">BigQuery Bronze</text>
+    <text x="856" y="399" class="small">Append-only raw landing tables</text>
+  </g>
+
+  <g class="box glow">
+    <rect x="540" y="510" width="240" height="150" rx="24" fill="url(#silver)" stroke="#C9D3DD"/>
+    <text x="572" y="559" class="tiny">CURATED LAYER</text>
+    <text x="572" y="599" class="label">BigQuery Silver</text>
+    <text x="572" y="633" class="small">Normalized vendas entity</text>
+  </g>
+
+  <g class="box glow">
+    <rect x="824" y="510" width="240" height="150" rx="24" fill="url(#gold)" stroke="#FFD875"/>
+    <text x="856" y="559" class="tiny">ANALYTICS LAYER</text>
+    <text x="856" y="599" class="label">BigQuery Gold</text>
+    <text x="856" y="633" class="small">Concessionaria and vendedor KPIs</text>
+  </g>
+
+  <g class="box pulse">
+    <rect x="1138" y="276" width="330" height="150" rx="24" fill="url(#panel)" stroke="#2A3E63"/>
+    <text x="1170" y="325" class="tiny">API LAYER</text>
+    <text x="1170" y="365" class="label">FastAPI on Cloud Run</text>
+    <text x="1170" y="399" class="small">Health, datasets, lineage, jobs and Novadrive endpoints</text>
+  </g>
+
+  <g class="box pulse">
+    <rect x="1138" y="474" width="330" height="150" rx="24" fill="url(#panel)" stroke="#2A3E63"/>
+    <text x="1170" y="523" class="tiny">COPILOT EXPERIENCE</text>
+    <text x="1170" y="563" class="label">Chat Service</text>
+    <text x="1170" y="597" class="small">Deterministic routing, Databricks and BigQuery metadata</text>
+  </g>
+
+  <g class="box pulse">
+    <rect x="1138" y="672" width="330" height="150" rx="24" fill="url(#panel)" stroke="#2A3E63"/>
+    <text x="1170" y="721" class="tiny">PRESENTATION</text>
+    <text x="1170" y="761" class="label">React Frontend</text>
+    <text x="1170" y="795" class="small">Dataset detail, chat and API-backed demo UI</text>
+  </g>
+
+  <path d="M440 351 C500 351, 502 351, 540 351" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M780 351 C804 351, 804 351, 824 351" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M944 426 C944 456, 944 478, 944 510" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M780 585 C804 585, 804 585, 824 585" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M1064 585 C1102 585, 1106 351, 1138 351" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M1064 585 C1100 585, 1106 549, 1138 549" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M1302 426 C1302 450, 1302 470, 1302 474" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M1302 624 C1302 648, 1302 668, 1302 672" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M440 748 C484 748, 500 620, 540 585" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash"/>
+  <path d="M440 748 C484 748, 500 390, 540 351" stroke="url(#accent)" stroke-width="5" stroke-linecap="round" class="dash" opacity="0.55"/>
+  <path d="M440 549 C810 549, 840 549, 1138 549" stroke="url(#accent)" stroke-width="3" stroke-linecap="round" class="dash" opacity="0.32"/>
+
+  <circle r="8" class="particle">
+    <animateMotion dur="5s" repeatCount="indefinite" path="M440 351 C500 351, 502 351, 540 351"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle2">
+    <animateMotion dur="5s" begin="0.7s" repeatCount="indefinite" path="M540 351 C660 351, 720 351, 824 351"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5s" begin="0.7s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle3">
+    <animateMotion dur="5.5s" begin="1.4s" repeatCount="indefinite" path="M944 426 C944 456, 944 478, 944 510"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5.5s" begin="1.4s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle">
+    <animateMotion dur="5s" begin="2s" repeatCount="indefinite" path="M780 585 C804 585, 804 585, 824 585"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5s" begin="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle2">
+    <animateMotion dur="5.6s" begin="2.6s" repeatCount="indefinite" path="M1064 585 C1102 585, 1106 351, 1138 351"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5.6s" begin="2.6s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle3">
+    <animateMotion dur="5.2s" begin="3.2s" repeatCount="indefinite" path="M1064 585 C1100 585, 1106 549, 1138 549"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5.2s" begin="3.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle">
+    <animateMotion dur="5.2s" begin="3.8s" repeatCount="indefinite" path="M1302 624 C1302 648, 1302 668, 1302 672"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5.2s" begin="3.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="8" class="particle2">
+    <animateMotion dur="5.8s" begin="1.1s" repeatCount="indefinite" path="M440 748 C484 748, 500 620, 540 585"/>
+    <animate attributeName="opacity" values="0;1;1;0" dur="5.8s" begin="1.1s" repeatCount="indefinite"/>
+  </circle>
+
+  <g>
+    <rect x="110" y="848" width="1358" height="34" rx="17" fill="#111C31" stroke="#22334F"/>
+    <circle cx="138" cy="865" r="7" fill="#5DFFB2"/>
+    <text x="156" y="872" class="small">Operational path: PostgreSQL → Airflow Docker → GCS Bronze → BigQuery Bronze/Silver/Gold → FastAPI / Chat / React</text>
+  </g>
+</svg>

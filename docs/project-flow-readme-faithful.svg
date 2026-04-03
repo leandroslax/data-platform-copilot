@@ -1,0 +1,181 @@
+<svg width="1600" height="920" viewBox="0 0 1600 920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0B1020"/>
+      <stop offset="100%" stop-color="#121C31"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#121B30"/>
+      <stop offset="100%" stop-color="#0E1628"/>
+    </linearGradient>
+    <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8B541D"/>
+      <stop offset="100%" stop-color="#C67727"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#919DAC"/>
+      <stop offset="100%" stop-color="#C3CDD8"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D5A02A"/>
+      <stop offset="100%" stop-color="#FFD66C"/>
+    </linearGradient>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <style>
+      .title { font: 800 56px Inter, "Segoe UI", sans-serif; fill: #F5F7FB; }
+      .subtitle { font: 400 24px Inter, "Segoe UI", sans-serif; fill: #B5C1D9; }
+      .section { font: 700 24px Inter, "Segoe UI", sans-serif; fill: #E7EDF7; }
+      .eyebrow-dark { font: 700 13px Inter, "Segoe UI", sans-serif; fill: #DCE6F6; letter-spacing: 1.4px; }
+      .eyebrow-light { font: 700 13px Inter, "Segoe UI", sans-serif; fill: #4C5D73; letter-spacing: 1.4px; }
+      .label-dark { font: 800 22px Inter, "Segoe UI", sans-serif; fill: #F5F7FB; }
+      .body-dark { font: 500 17px Inter, "Segoe UI", sans-serif; fill: #D3DCEB; }
+      .label-light { font: 800 22px Inter, "Segoe UI", sans-serif; fill: #1E2736; }
+      .body-light { font: 500 17px Inter, "Segoe UI", sans-serif; fill: #39485D; }
+      .path-main {
+        stroke: #68A5E0;
+        stroke-width: 5;
+        stroke-linecap: round;
+        fill: none;
+        stroke-dasharray: 10 10;
+        animation: dashmove 16s linear infinite;
+      }
+      .path-side {
+        stroke: #5B8AC7;
+        stroke-width: 3;
+        stroke-linecap: round;
+        fill: none;
+        stroke-dasharray: 9 10;
+        animation: dashmove 18s linear infinite;
+        opacity: 0.75;
+      }
+      @keyframes dashmove {
+        from { stroke-dashoffset: 0; }
+        to { stroke-dashoffset: -320; }
+      }
+      .pulse-a {
+        animation: pulse 6s ease-in-out infinite;
+      }
+      .pulse-b {
+        animation: pulse 6s ease-in-out infinite 1.2s;
+      }
+      .pulse-c {
+        animation: pulse 6s ease-in-out infinite 2.4s;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0; }
+        10%, 70% { opacity: 1; }
+      }
+    </style>
+  </defs>
+
+  <rect width="1600" height="920" fill="url(#bg)"/>
+  <circle cx="150" cy="120" r="200" fill="#22335C" opacity="0.22"/>
+  <circle cx="1450" cy="790" r="240" fill="#1A2F49" opacity="0.18"/>
+
+  <text x="72" y="86" class="title">DATA PLATFORM COPILOT</text>
+  <text x="72" y="128" class="subtitle">Pipeline principal atual da Novadrive e trilha lateral de metadados do produto</text>
+
+  <text x="88" y="222" class="section">Fluxo principal Novadrive</text>
+  <text x="88" y="560" class="section">Metadados e exploração</text>
+  <text x="968" y="560" class="section">Camada de produto</text>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="270" width="230" height="120" rx="22" fill="url(#panel)" stroke="#2B4066"/>
+    <text x="102" y="300" class="eyebrow-dark">SOURCE</text>
+    <text x="102" y="340" class="label-dark">PostgreSQL</text>
+    <text x="102" y="372" class="body-dark">Novadrive transacional</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="390" y="270" width="230" height="120" rx="22" fill="url(#panel)" stroke="#2B4066"/>
+    <text x="412" y="300" class="eyebrow-dark">ORCHESTRATION</text>
+    <text x="412" y="340" class="label-dark">Airflow local</text>
+    <text x="412" y="372" class="body-dark">Runtime Docker da DAG</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="700" y="170" width="230" height="120" rx="22" fill="url(#bronze)" stroke="#E39A3F"/>
+    <text x="722" y="200" class="eyebrow-dark">BRONZE</text>
+    <text x="722" y="240" class="label-dark">GCS Bronze</text>
+    <text x="722" y="272" class="body-dark">Arquivos brutos JSONL</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="700" y="370" width="250" height="120" rx="22" fill="url(#bronze)" stroke="#E39A3F"/>
+    <text x="722" y="400" class="eyebrow-dark">BRONZE</text>
+    <text x="722" y="434" class="label-dark">BigQuery</text>
+    <text x="722" y="462" class="label-dark">Bronze</text>
+    <text x="722" y="488" class="body-dark">Landing bruto no warehouse</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1010" y="270" width="260" height="120" rx="22" fill="url(#silver)" stroke="#D5DEE7"/>
+    <text x="1032" y="300" class="eyebrow-light">SILVER</text>
+    <text x="1032" y="336" class="label-light">BigQuery</text>
+    <text x="1032" y="366" class="label-light">Silver</text>
+    <text x="1032" y="394" class="body-light">`silver_novadrive.vendas`</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1320" y="270" width="250" height="120" rx="22" fill="url(#gold)" stroke="#FFE18A"/>
+    <text x="1342" y="300" class="eyebrow-light">GOLD</text>
+    <text x="1342" y="334" class="label-light">BigQuery</text>
+    <text x="1342" y="362" class="label-light">Gold</text>
+    <text x="1342" y="390" class="body-light">KPI e consumo analítico</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="600" width="380" height="110" rx="22" fill="url(#panel)" stroke="#2B4066"/>
+    <text x="102" y="630" class="eyebrow-dark">METADATA</text>
+    <text x="102" y="664" class="label-dark">Databricks</text>
+    <text x="102" y="694" class="label-dark">Unity Catalog</text>
+    <text x="102" y="724" class="body-dark">Datasets, owner e colunas</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="920" y="600" width="170" height="110" rx="22" fill="url(#panel)" stroke="#2B4066"/>
+    <text x="942" y="630" class="eyebrow-dark">PRODUCT</text>
+    <text x="942" y="668" class="label-dark">React UI</text>
+    <text x="942" y="700" class="body-dark">Frontend demo</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1130" y="600" width="170" height="110" rx="22" fill="url(#panel)" stroke="#2B4066"/>
+    <text x="1152" y="630" class="eyebrow-dark">PRODUCT</text>
+    <text x="1152" y="668" class="label-dark">FastAPI</text>
+    <text x="1152" y="700" class="body-dark">Cloud Run</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1340" y="600" width="170" height="110" rx="22" fill="url(#panel)" stroke="#2B4066"/>
+    <text x="1362" y="630" class="eyebrow-dark">PRODUCT</text>
+    <text x="1362" y="670" class="label-dark">Chat</text>
+    <text x="1362" y="694" class="body-dark">Q&amp;A e</text>
+    <text x="1362" y="714" class="body-dark">exploração</text>
+  </g>
+
+  <path d="M310 330 L390 330" class="path-main"/>
+  <path d="M620 330 L700 230" class="path-main"/>
+  <path d="M620 330 L700 430" class="path-main"/>
+  <path d="M930 230 L1010 330" class="path-main"/>
+  <path d="M930 430 L1010 330" class="path-main"/>
+  <path d="M1240 330 L1320 330" class="path-main"/>
+  <path d="M1435 390 L1435 600" class="path-main"/>
+
+  <path d="M420 655 L1340 655" class="path-side"/>
+
+  <circle cx="335" cy="330" r="8" fill="#67FFB7" class="pulse-a"/>
+  <circle cx="660" cy="280" r="8" fill="#48CCFF" class="pulse-b"/>
+  <circle cx="775" cy="430" r="8" fill="#C67727" class="pulse-c"/>
+  <circle cx="965" cy="285" r="8" fill="#48CCFF" class="pulse-a"/>
+  <circle cx="965" cy="375" r="8" fill="#67FFB7" class="pulse-b"/>
+  <circle cx="1280" cy="330" r="8" fill="#FFD66C" class="pulse-c"/>
+  <circle cx="1435" cy="515" r="8" fill="#48CCFF" class="pulse-a"/>
+  <circle cx="720" cy="655" r="7" fill="#48CCFF" class="pulse-b"/>
+
+  <rect x="70" y="818" width="1460" height="40" rx="20" fill="#10192C" stroke="#233755"/>
+  <circle cx="94" cy="838" r="8" fill="#67FFB7"/>
+  <text x="118" y="844" class="body-dark">Fluxo principal: PostgreSQL → Airflow → GCS Bronze + BigQuery Bronze → BigQuery Silver → BigQuery Gold → FastAPI / Chat / Frontend Demo</text>
+</svg>

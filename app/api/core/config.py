@@ -13,6 +13,7 @@ class Settings(BaseModel):
     bigquery_project_id: str = os.getenv("BIGQUERY_PROJECT_ID", "data-platform-copilot-dev")
     novadrive_silver_dataset: str = os.getenv("NOVADRIVE_SILVER_DATASET", "silver_novadrive")
     novadrive_gold_dataset: str = os.getenv("NOVADRIVE_GOLD_DATASET", "gold_novadrive")
+    novadrive_metrics_ttl_seconds: int = int(os.getenv("NOVADRIVE_METRICS_TTL_SECONDS", "300"))
 
 
 settings = Settings()

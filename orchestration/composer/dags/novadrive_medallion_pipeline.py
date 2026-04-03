@@ -16,6 +16,7 @@ from airflow.providers.google.cloud.operators.bigquery import (
 )
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from google.cloud import bigquery
+import pendulum
 from psycopg2.extras import RealDictCursor
 
 
@@ -48,6 +49,7 @@ TABLES = [
 ]
 
 SQL_DIR = Path(__file__).resolve().parent / "sql"
+LOCAL_TIMEZONE = pendulum.timezone("America/Sao_Paulo")
 
 
 def utc_now() -> datetime:
@@ -218,7 +220,7 @@ with DAG(
     dag_id="novadrive_medallion_pipeline",
     description="Incremental ingestion and medallion modeling for Novadrive in GCP.",
     default_args=default_args,
-    start_date=datetime(2026, 3, 30),
+    start_date=datetime(2026, 3, 30, tzinfo=LOCAL_TIMEZONE),
     schedule="0 * * * *",
     catchup=False,
     max_active_runs=1,

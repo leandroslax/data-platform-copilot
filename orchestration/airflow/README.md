@@ -17,6 +17,7 @@ Usar Apache Airflow via Docker Compose para:
 - `Dockerfile`: imagem customizada com providers e dependencias
 - `requirements-airflow.txt`: dependencias Python adicionais para o Airflow
 - `.env.example`: variaveis de ambiente base para o Compose
+- `../observability/`: stack local de Prometheus e Grafana
 
 ## Pre-requisitos
 
@@ -43,7 +44,13 @@ docker compose up -d
 
 UI local do Airflow:
 
-- [http://localhost:8080](http://localhost:8080)
+- [http://localhost:8081](http://localhost:8081)
+
+Observabilidade local:
+
+- Grafana: [http://localhost:3000](http://localhost:3000)
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- cAdvisor: [http://localhost:8083](http://localhost:8083)
 
 Credenciais padrao:
 
@@ -106,3 +113,17 @@ Para limpar volumes do metadata DB:
 ```bash
 docker compose down -v
 ```
+
+## API local com metricas
+
+Para a observabilidade ficar completa, suba tambem a API local com metricas Prometheus:
+
+```bash
+cd /Users/leandrosantos/Downloads/data-platform-copilot
+source .venv/bin/activate
+uvicorn app.api.main:app --reload
+```
+
+Endpoint local de metricas:
+
+- [http://127.0.0.1:8000/metrics](http://127.0.0.1:8000/metrics)

@@ -10,6 +10,8 @@ Hoje o projeto já entrega um MVP funcional com:
 - pipeline medalhão da Novadrive em evolução com PostgreSQL, GCS e BigQuery
 - CI/CD com GitHub Actions
 - frontend demo em React + Vite
+- observabilidade local com Prometheus + Grafana para API e orquestração
+- dashboards dedicados da Novadrive para visão executiva e qualidade de dados
 - descoberta real de datasets e detalhes de datasets via Databricks
 - consultas analíticas reais da Novadrive via BigQuery Gold
 - fallback seguro para mock quando uma fonte ainda não está disponível no workspace
@@ -108,9 +110,15 @@ FastAPI / Chat / Frontend Demo
 Camadas e ativos principais da Novadrive:
 
 - `bronze_novadrive`: dados brutos extraídos do PostgreSQL
-- `silver_novadrive.vendas`: visão consolidada e normalizada de vendas
+- `silver_novadrive.vendas`: visão consolidada, normalizada e deduplicada de vendas
 - `gold_novadrive.faturamento_por_concessionaria`: agregado analítico por concessionária
 - `gold_novadrive.performance_vendedores`: agregado analítico por vendedor
+
+Observação importante sobre qualidade de dados:
+
+- a modelagem da `silver_novadrive.vendas` foi ajustada para deduplicar registros de bronze antes dos joins
+- isso eliminou multiplicação indevida de linhas na silver e inflação artificial de faturamento na gold
+- após a correção, os valores analíticos passaram de bilhões irreais para milhões coerentes com uma operação demo automotiva
 
 Arquivos relacionados:
 
@@ -217,7 +225,55 @@ Checks rápidos:
 curl http://127.0.0.1:8000/api/v1/health
 curl http://127.0.0.1:8000/api/v1/datasets
 curl http://127.0.0.1:8000/api/v1/datasets/samples.tpch.orders
+curl http://127.0.0.1:8000/metrics
 ```
+
+## Observabilidade Local
+
+O projeto pode ser monitorado localmente com uma stack simples de observabilidade baseada em Prometheus e Grafana.
+
+Cobertura atual:
+
+- `FastAPI` expõe métricas Prometheus em `/metrics`
+- `Prometheus` coleta métricas da API local
+- `Grafana` sobe com dashboard provisionado
+- `cAdvisor` monitora os containers Docker
+- `postgres-exporter` monitora o Postgres do metadata DB do Airflow
+- métricas de negócio da Novadrive são publicadas no `/metrics` a partir de consultas reais ao BigQuery
+- métricas de qualidade incluem duplicidade, freshness, snapshots diários e volume por camada
+
+URLs locais:
+
+- Airflow UI: [http://localhost:8081](http://localhost:8081)
+- Grafana: [http://localhost:3000](http://localhost:3000)
+- Prometheus: [http://localhost:9090](http://localhost:9090)
+- cAdvisor: [http://localhost:8083](http://localhost:8083)
+
+Dashboards provisionados:
+
+- `Data Platform Copilot Overview`
+- `Visão Executiva da Novadrive`
+- `Qualidade de Dados e Pipeline da Novadrive`
+
+Cobertura dos dashboards:
+
+- disponibilidade da API
+- disponibilidade do Postgres exporter
+- throughput e latência da API
+- CPU e memória dos containers do Airflow
+- tráfego por endpoint
+- uso dos endpoints de chat e Novadrive
+- volume de `silver_novadrive.vendas`
+- volume dos marts `gold_novadrive`
+- última venda observada em silver e gold
+- atraso de atualização dos dados
+- taxa de duplicidade na silver
+- snapshots diários de faturamento e volume
+- top concessionárias, top vendedores, cidades, estados e ticket médio
+
+Documentação detalhada:
+
+- [orchestration/observability/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/observability/README.md)
 
 ## Rodando o Backend com Metadados Reais do Databricks
 
@@ -386,11 +442,17 @@ Esse ambiente já foi validado com a DAG `novadrive_medallion_pipeline`, executa
 - transformação Gold
 - checks finais de qualidade nas tabelas Gold
 
-Validação funcional observada:
+Validação funcional observada após a correção de deduplicação:
 
-- `silver_novadrive.vendas`: `2.750.274` linhas
+- `silver_novadrive.vendas`: `2.305` linhas
 - `gold_novadrive.faturamento_por_concessionaria`: `29` linhas
 - `gold_novadrive.performance_vendedores`: `54` linhas
+
+Resultados observados após a correção:
+
+- taxa de duplicidade da silver: `0%`
+- freshness operacional medida no Grafana
+- faturamento das principais concessionárias em faixa de milhões, não mais bilhões inflados por duplicação
 
 Arquivos principais:
 
@@ -467,12 +529,17 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - pipeline medalhão da Novadrive em código, com ingestão PostgreSQL -> Bronze -> Silver -> Gold
 - DAG `novadrive_medallion_pipeline` preparada para Composer
 - runtime local de Apache Airflow via Docker para executar a DAG da Novadrive
+- stack local de observabilidade com Prometheus, Grafana, cAdvisor e postgres-exporter
+- dashboard executivo da Novadrive com receita, geografia, ranking comercial e ticket médio
+- dashboard de qualidade e pipeline da Novadrive com freshness, duplicidade e snapshots diários
 - módulos Terraform e ambiente `dev` no GCP
 - deploy da API no Cloud Run
 - workflows de CI e deploy no GitHub Actions
 - frontend demo em React conectado ao backend real
 - melhoria do chat para resolver datasets explícitos e responder colunas
 - melhoria do chat para responder perguntas sobre indicadores da Novadrive
+- fallback de metadados do BigQuery para dataset detail e schema da Novadrive
+- correção da modelagem silver para deduplicação antes da construção da gold
 - suporte local a CORS para desenvolvimento com Vite
 
 ## Próximos Passos Sugeridos
