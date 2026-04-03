@@ -10,7 +10,9 @@ from app.api.services.job_service import get_job_incidents
 from app.api.services.lineage_service import get_lineage
 from app.api.services.llm_service import synthesize_grounded_answer
 from app.api.services.novadrive_service import (
+    get_resumo_faturamento_novadrive,
     list_faturamento_por_concessionaria,
+    list_previsao_faturamento,
     list_performance_vendedores,
 )
 from app.api.services.retrieval_service import search_catalog, summarize_owners
@@ -41,6 +43,8 @@ STOPWORDS = {
     "owner",
     "owners",
     "pipeline",
+    "previsao",
+    "previsoes",
     "qual",
     "quais",
     "quem",
@@ -60,6 +64,11 @@ DATASET_ID_PATTERN = re.compile(r"\b[a-z0-9_][a-z0-9_-]*\.[a-z0-9_]+\.[a-z0-9_]+
 def _normalize_text(text: str) -> str:
     normalized = unicodedata.normalize("NFKD", text.lower())
     return "".join(char for char in normalized if not unicodedata.combining(char))
+
+
+def _format_currency_brl(value: float) -> str:
+    formatted = f"{value:,.2f}"
+    return f"R$ {formatted.replace(',', 'X').replace('.', ',').replace('X', '.')}"
 
 
 def _tokenize(text: str) -> set[str]:
@@ -178,12 +187,70 @@ def _answers_about_novadrive(question: str) -> bool:
             "melhor vendedor",
             "mais faturou",
             "performance",
+            "previsao",
+            "previsoes",
+            "forecast",
+            "proxima semana",
+            "proximos dias",
         }
     )
 
 
 def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
     normalized_question = _normalize_text(question)
+
+    if (
+        "novadrive" in normalized_question
+        and "faturamento" in normalized_question
+        and "previsa" not in normalized_question
+        and "concessionaria" not in normalized_question
+        and "concessionarias" not in normalized_question
+        and "vendedor" not in normalized_question
+        and "vendedores" not in normalized_question
+        and "ticket" not in normalized_question
+    ):
+        resumo = get_resumo_faturamento_novadrive()
+        return ChatResponse(
+            answer=(
+                f"O faturamento total atual da Novadrive e {_format_currency_brl(resumo.faturamento_total)}, "
+                f"considerando {resumo.total_vendas} vendas e ticket medio de "
+                f"{_format_currency_brl(resumo.ticket_medio)}."
+                + (
+                    f" A ultima venda registrada no consolidado foi em {resumo.ultima_venda}."
+                    if resumo.ultima_venda
+                    else ""
+                )
+            ),
+            sources=[
+                ChatSource(
+                    type="novadrive_gold",
+                    id="faturamento_resumo",
+                    label="Gold Novadrive - resumo de faturamento",
+                )
+            ],
+        )
+
+    if any(keyword in normalized_question for keyword in {"previsao", "previsoes", "forecast", "proxima semana"}):
+        previsoes = list_previsao_faturamento(limit=5, days_ahead=7)
+        if not previsoes.items:
+            return None
+
+        top = previsoes.items[0]
+        return ChatResponse(
+            answer=(
+                f"A maior previsao de faturamento da Novadrive para {top.data_previsao} e da "
+                f"{top.concessionaria}, em {top.cidade}-{top.sigla_estado}, com valor previsto de "
+                f"{_format_currency_brl(top.faturamento_previsto)}. O intervalo estimado vai de "
+                f"{_format_currency_brl(top.limite_inferior)} a {_format_currency_brl(top.limite_superior)}."
+            ),
+            sources=[
+                ChatSource(
+                    type="novadrive_ml",
+                    id="previsao_faturamento_concessionarias",
+                    label="ML Novadrive - previsao de faturamento por concessionaria",
+                )
+            ],
+        )
 
     if "concessionaria" in normalized_question or "concessionarias" in normalized_question:
         ranking = list_faturamento_por_concessionaria(limit=5)
@@ -194,8 +261,8 @@ def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
         return ChatResponse(
             answer=(
                 f"A concessionaria com maior faturamento e {top.concessionaria}, em {top.cidade}-{top.sigla_estado}, "
-                f"com faturamento total de {top.faturamento_total:.2f}, {top.total_vendas} vendas e ticket medio de "
-                f"{top.ticket_medio:.2f}."
+                f"com faturamento total de {_format_currency_brl(top.faturamento_total)}, {top.total_vendas} vendas e ticket medio de "
+                f"{_format_currency_brl(top.ticket_medio)}."
             ),
             sources=[
                 ChatSource(
@@ -215,8 +282,8 @@ def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
         return ChatResponse(
             answer=(
                 f"O vendedor com maior faturamento e {top.vendedor_nome}, da {top.concessionaria}, "
-                f"com faturamento total de {top.faturamento_total:.2f}, {top.total_vendas} vendas e ticket medio de "
-                f"{top.ticket_medio:.2f}."
+                f"com faturamento total de {_format_currency_brl(top.faturamento_total)}, {top.total_vendas} vendas e ticket medio de "
+                f"{_format_currency_brl(top.ticket_medio)}."
             ),
             sources=[
                 ChatSource(

@@ -67,3 +67,5 @@ Ele mostra:
 - visão dedicada da Novadrive com volume, freshness, receita e tráfego de endpoints
 - dashboard executivo da Novadrive para receita, geografia, ranking comercial e ticket médio
 - dashboard separado de qualidade e pipeline para freshness, duplicidade, snapshots diários e consumo operacional
+- cards de última atualização e timestamps legíveis para painéis de tempo
+- valores de receita e rankings coerentes após a correção de deduplicação da camada silver

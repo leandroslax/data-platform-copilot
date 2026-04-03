@@ -17,6 +17,7 @@ Hoje o projeto já entrega um MVP funcional com:
 - busca semântica sobre o catálogo com embeddings
 - síntese grounded opcional com LLM quando configurado
 - consultas analíticas reais da Novadrive via BigQuery Gold
+- camada de ML da Novadrive com previsão diária de faturamento por concessionária via BigQuery ML
 - fallback seguro para mock quando uma fonte ainda não está disponível no workspace
 
 ## Status Atual
@@ -35,7 +36,9 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - `GET /api/v1/jobs/{job_id}/incidents`
 - `GET /api/v1/lineage/{dataset_id}`
 - `GET /api/v1/novadrive/faturamento/concessionarias`
+- `GET /api/v1/novadrive/faturamento/resumo`
 - `GET /api/v1/novadrive/performance/vendedores`
+- `GET /api/v1/novadrive/previsoes/faturamento`
 - `POST /api/v1/metadata/sync`
 - `POST /api/v1/chat`
 
@@ -47,7 +50,9 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - datasets analíticos da Novadrive materializados em BigQuery
 - detalhe e colunas de tabelas da Novadrive via metadados do BigQuery
 - endpoints reais de faturamento por concessionária e performance de vendedores
-- chat respondendo perguntas sobre indicadores da Novadrive
+- endpoint real de resumo consolidado de faturamento da Novadrive
+- endpoint real de previsão de faturamento por concessionária com materialização no BigQuery
+- chat respondendo perguntas sobre indicadores da Novadrive, incluindo faturamento atual/total e previsão
 - chat respondendo perguntas sobre datasets explícitos como `samples.tpch.orders`
 - chat respondendo owner e colunas de datasets reais, incluindo tabelas BigQuery da Novadrive
 - chat respondendo perguntas mais amplas sobre o ambiente, incluindo consultas por owner
@@ -84,6 +89,7 @@ Evolução desejada:
 - Bronze: dados brutos e alinhados à origem, incluindo extrações da Novadrive em GCS e tabelas bronze no BigQuery
 - Silver: entidades normalizadas e enriquecidas, incluindo a tabela `silver_novadrive.vendas`
 - Gold: visões analíticas e product-facing, incluindo `gold_novadrive.faturamento_por_concessionaria` e `gold_novadrive.performance_vendedores`
+- Gold/ML: features diárias, modelo preditivo e tabela de previsões de faturamento por concessionária
 - Camada de produto: serviços FastAPI, frontend React, CI/CD, infraestrutura Terraform, Airflow local para operação do pipeline e futuros fluxos de RAG
 
 ## Arquitetura Medalhão
@@ -121,6 +127,9 @@ Camadas e ativos principais da Novadrive:
 - `silver_novadrive.vendas`: visão consolidada, normalizada e deduplicada de vendas
 - `gold_novadrive.faturamento_por_concessionaria`: agregado analítico por concessionária
 - `gold_novadrive.performance_vendedores`: agregado analítico por vendedor
+- `gold_novadrive.ml_receita_diaria_concessionarias`: série diária por concessionária para treino
+- `gold_novadrive.modelo_previsao_faturamento_concessionarias`: modelo `ARIMA_PLUS` treinado no BigQuery ML
+- `gold_novadrive.previsao_faturamento_concessionarias`: previsões diárias materializadas
 
 Observação importante sobre qualidade de dados:
 
@@ -135,6 +144,9 @@ Arquivos relacionados:
 - [pipelines/metadata/novadrive/01_silver_vendas.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/01_silver_vendas.sql)
 - [pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/02_gold_faturamento_por_concessionaria.sql)
 - [pipelines/metadata/novadrive/03_gold_performance_vendedores.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/03_gold_performance_vendedores.sql)
+- [pipelines/metadata/novadrive/04_ml_receita_diaria_concessionarias.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/04_ml_receita_diaria_concessionarias.sql)
+- [pipelines/metadata/novadrive/05_ml_modelo_previsao_faturamento.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/05_ml_modelo_previsao_faturamento.sql)
+- [pipelines/metadata/novadrive/06_ml_previsao_faturamento_concessionarias.sql](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/novadrive/06_ml_previsao_faturamento_concessionarias.sql)
 
 Documentação de referência:
 
@@ -222,6 +234,19 @@ Variáveis adicionais para a fase atual:
 - `OPENAI_EMBEDDING_MODEL`
 - `OPENAI_RESPONSE_MODEL`
 
+Exemplo local com OpenAI habilitado:
+
+```dotenv
+APP_ENV=dev
+DATABRICKS_HOST=
+DATABRICKS_TOKEN=
+DATABRICKS_CATALOG=main
+OPENAI_API_KEY=
+OPENAI_RESPONSE_MODEL=gpt-5.4-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
 ## Desenvolvimento Local do Backend
 
 Setup recomendado:
@@ -255,7 +280,13 @@ Sincronização local do catálogo:
 
 ```bash
 source .venv/bin/activate
-python pipelines/metadata/sync_metadata_catalog.py
+PYTHONPATH=. python pipelines/metadata/sync_metadata_catalog.py
+```
+
+Ou pela própria API local:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/metadata/sync
 ```
 
 ## Observabilidade Local
@@ -300,6 +331,7 @@ Cobertura dos dashboards:
 - taxa de duplicidade na silver
 - snapshots diários de faturamento e volume
 - top concessionárias, top vendedores, cidades, estados e ticket médio
+- dashboards traduzidos para PT-BR com foco em consumo executivo e diagnóstico operacional
 
 Documentação detalhada:
 
@@ -340,6 +372,7 @@ Hoje o frontend suporta:
 - busca semântica no catálogo persistido
 - visualização indireta dos indicadores da Novadrive via chat e endpoints da API
 - card de destaque para dataset principal
+- uso do backend local via `VITE_API_BASE_URL` para validar novas features antes do deploy
 
 Para rodar localmente:
 
@@ -354,6 +387,13 @@ Abrir:
 - [http://localhost:5173](http://localhost:5173)
 
 Se o Vite subir em outra porta, confirme que essa origem está liberada no CORS do backend.
+
+Exemplo forçando a porta `4173`:
+
+```bash
+cd web
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev -- --host 127.0.0.1 --port 4173
+```
 
 Publicação:
 
@@ -377,7 +417,7 @@ Cobertura atual inclui:
 - fallback de lineage
 - rota de busca semântica
 - endpoints e service layer da Novadrive
-- roteamento do chat para owner, colunas, jobs, retrieval semântico e resposta fallback
+- roteamento do chat para owner, colunas, jobs, retrieval semântico, indicadores da Novadrive, resumo consolidado de faturamento e resposta fallback
 
 Os testes do backend limpam variáveis do Databricks quando necessário para manter o comportamento mock determinístico.
 
@@ -451,6 +491,9 @@ Esse ambiente já foi validado com a DAG `novadrive_medallion_pipeline`, executa
 - carga Bronze em GCS e BigQuery
 - transformação Silver
 - transformação Gold
+- materialização de features diárias para ML
+- treino do modelo de previsão de faturamento
+- geração de previsões diárias por concessionária
 - checks finais de qualidade nas tabelas Gold
 
 Validação funcional observada após a correção de deduplicação:
@@ -482,6 +525,22 @@ Arquivos principais:
 - [app/api/routes/metadata.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/routes/metadata.py)
 - [pipelines/metadata/sync_metadata_catalog.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/sync_metadata_catalog.py)
 
+## Camada de ML da Novadrive
+
+O projeto agora inclui um MVP de ML orientado a previsão de faturamento:
+
+- materialização de série diária por concessionária a partir da `silver_novadrive.vendas`
+- treino de um modelo `ARIMA_PLUS` no BigQuery ML
+- geração de previsões diárias para os próximos 7 dias
+- consumo dessas previsões por API e pelo chat
+- resposta no chat com formatação monetária em BRL para indicadores e previsões da Novadrive
+
+Ativos principais:
+
+- `gold_novadrive.ml_receita_diaria_concessionarias`
+- `gold_novadrive.modelo_previsao_faturamento_concessionarias`
+- `gold_novadrive.previsao_faturamento_concessionarias`
+
 ## Endpoints do Ambiente Dev
 
 Backend atual no Cloud Run:
@@ -499,7 +558,9 @@ curl "https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/jobs
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/lineage/main.sales.orders
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/concessionarias
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/resumo
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/performance/vendedores
+curl "https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/previsoes/faturamento?limit=10&days_ahead=7"
 curl -X POST https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/metadata/sync
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
@@ -513,6 +574,12 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"Quais vendedores têm melhor performance na Novadrive?"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Qual a previsão de faturamento da Novadrive para a próxima semana?"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Qual faturamento atual da Novadrive?"}'
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"Quais datasets pertencem ao owner sales-platform?"}'
@@ -540,15 +607,25 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - frontend demo em React conectado ao backend real
 - frontend demo preparado para publicação em GitHub Pages
 - melhoria do chat para resolver datasets explícitos, responder colunas e consultar datasets por owner
-- melhoria do chat para responder perguntas sobre indicadores da Novadrive
+- melhoria do chat para responder perguntas sobre indicadores da Novadrive, faturamento atual/total e previsão
 - fallback de metadados do BigQuery para dataset detail e schema da Novadrive
 - correção da modelagem silver para deduplicação antes da construção da gold
 - suporte local a CORS para desenvolvimento com Vite
+- MVP de ML em BigQuery ML com treinamento e serving de previsões pela API
 
-## Próximos Passos Sugeridos
+## Estado Atual do Projeto
 
-- ampliar a persistência para documentos e runbooks, não só datasets
-- evoluir o retrieval de embeddings para modo híbrido com documentação operacional
-- enriquecer o chat com filtros, comparações e perguntas históricas mais amplas
-- adicionar ranking temporal e séries comparativas no frontend demo
-- criar deploy de frontend com domínio próprio, se desejar
+Hoje o projeto já cobre:
+
+- plataforma de dados medalhão para a Novadrive com ingestão, silver, gold e ML
+- copiloto com catálogo persistido, retrieval semântico, perguntas por owner e síntese grounded opcional
+- chat respondendo metadados, indicadores analíticos, faturamento consolidado e previsão
+- orquestração oficial em Apache Airflow local via Docker
+- observabilidade local com Prometheus e Grafana
+- frontend demo local em React conectado ao backend real ou ao backend local
+
+Os próximos incrementos mais naturais passam a ser refinamentos de produto, como:
+
+- retrieval híbrido com documentação operacional e runbooks
+- perguntas históricas e comparativas mais amplas no chat
+- publicação final do frontend demo em ambiente público, se desejado

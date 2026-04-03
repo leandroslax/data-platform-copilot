@@ -11,8 +11,11 @@ from app.api.schemas.lineage import LineageResponse
 from app.api.schemas.novadrive import (
     FaturamentoConcessionariaItem,
     FaturamentoConcessionariaResponse,
+    PrevisaoFaturamentoItem,
+    PrevisaoFaturamentoResponse,
     PerformanceVendedorItem,
     PerformanceVendedorResponse,
+    ResumoFaturamentoNovadriveResponse,
 )
 from app.api.services import chat_service
 
@@ -352,6 +355,30 @@ def test_chat_answers_novadrive_concessionaria_question_with_accents(monkeypatch
     assert payload["sources"][0]["id"] == "faturamento_por_concessionaria"
 
 
+def test_chat_answers_novadrive_total_revenue_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "get_resumo_faturamento_novadrive",
+        lambda: ResumoFaturamentoNovadriveResponse(
+            faturamento_total=289500123.45,
+            total_vendas=2301,
+            ticket_medio=125814.92,
+            ultima_venda="2026-04-03 00:10:00",
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Qual faturamento atual da Novadrive?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "R$ 289.500.123,45" in payload["answer"]
+    assert "2301 vendas" in payload["answer"]
+    assert payload["sources"][0]["id"] == "faturamento_resumo"
+
+
 def test_chat_answers_novadrive_vendedor_question(monkeypatch) -> None:
     monkeypatch.setattr(
         chat_service,
@@ -386,6 +413,43 @@ def test_chat_answers_novadrive_vendedor_question(monkeypatch) -> None:
     payload = response.json()
     assert "Luciana Freitas" in payload["answer"]
     assert payload["sources"][0]["id"] == "performance_vendedores"
+
+
+def test_chat_answers_novadrive_forecast_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "list_previsao_faturamento",
+        lambda limit, days_ahead: PrevisaoFaturamentoResponse(
+            items=[
+                PrevisaoFaturamentoItem(
+                    data_previsao="2026-04-10",
+                    id_concessionarias=13,
+                    concessionaria="Concessionária NovaDrive Motors Belo Horizonte",
+                    cidade="Belo Horizonte",
+                    estado="Minas Gerais",
+                    sigla_estado="MG",
+                    faturamento_previsto=48500000.0,
+                    limite_inferior=43000000.0,
+                    limite_superior=52000000.0,
+                    confidence_level=0.8,
+                )
+            ],
+            total=1,
+            limit=limit,
+            days_ahead=days_ahead,
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Qual a previsao de faturamento da Novadrive para a proxima semana?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "2026-04-10" in payload["answer"]
+    assert "Belo Horizonte" in payload["answer"]
+    assert payload["sources"][0]["id"] == "previsao_faturamento_concessionarias"
 
 
 def test_chat_returns_fallback_when_context_is_missing(monkeypatch) -> None:

@@ -28,6 +28,10 @@ infra/terraform/envs/dev/terraform.tfvars
 # Local Airflow credentials
 orchestration/airflow/keys/*.json
 
+# Local metadata catalog state
+pipelines/metadata/state/*.json
+!pipelines/metadata/state/.gitkeep
+
 # Airflow runtime artifacts
 orchestration/airflow/logs/*
 !orchestration/airflow/logs/.gitkeep

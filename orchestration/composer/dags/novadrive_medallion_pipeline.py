@@ -272,6 +272,42 @@ with DAG(
         project_id=PROJECT_ID,
     )
 
+    build_ml_receita_diaria = BigQueryInsertJobOperator(
+        task_id="build_ml_receita_diaria_concessionarias",
+        configuration={
+            "query": {
+                "query": read_sql("04_ml_receita_diaria_concessionarias.sql"),
+                "useLegacySql": False,
+            }
+        },
+        location="US",
+        project_id=PROJECT_ID,
+    )
+
+    train_ml_modelo_previsao = BigQueryInsertJobOperator(
+        task_id="train_ml_modelo_previsao_faturamento",
+        configuration={
+            "query": {
+                "query": read_sql("05_ml_modelo_previsao_faturamento.sql"),
+                "useLegacySql": False,
+            }
+        },
+        location="US",
+        project_id=PROJECT_ID,
+    )
+
+    build_ml_previsao_faturamento = BigQueryInsertJobOperator(
+        task_id="build_ml_previsao_faturamento_concessionarias",
+        configuration={
+            "query": {
+                "query": read_sql("06_ml_previsao_faturamento_concessionarias.sql"),
+                "useLegacySql": False,
+            }
+        },
+        location="US",
+        project_id=PROJECT_ID,
+    )
+
     check_silver_has_rows = BigQueryCheckOperator(
         task_id="check_silver_vendas_has_rows",
         sql=f"SELECT COUNT(*) > 0 FROM `{PROJECT_ID}.{SILVER_DATASET}.vendas`",
@@ -296,8 +332,17 @@ with DAG(
         location="US",
     )
 
+    check_ml_previsao_has_rows = BigQueryCheckOperator(
+        task_id="check_ml_previsao_faturamento_has_rows",
+        sql=f"SELECT COUNT(*) > 0 FROM `{PROJECT_ID}.{GOLD_DATASET}.previsao_faturamento_concessionarias`",
+        use_legacy_sql=False,
+        location="US",
+    )
+
     extract_postgres_to_gcs_bronze >> load_gcs_to_bigquery_bronze >> build_silver_vendas
     build_silver_vendas >> [build_gold_faturamento, build_gold_vendedores]
+    build_silver_vendas >> build_ml_receita_diaria >> train_ml_modelo_previsao >> build_ml_previsao_faturamento
     build_gold_faturamento >> check_gold_concessionarias_has_rows
     build_gold_vendedores >> check_gold_vendedores_has_rows
+    build_ml_previsao_faturamento >> check_ml_previsao_has_rows
     build_silver_vendas >> check_silver_has_rows
