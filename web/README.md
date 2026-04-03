@@ -1,16 +1,37 @@
-# React + Vite
+# Frontend Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+O frontend demo em [web/](/Users/leandrosantos/Downloads/data-platform-copilot/web/) usa React + Vite para consumir a API do copilot.
 
-Currently, two official plugins are available:
+## O que ele mostra hoje
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- lista de datasets vindos da API
+- detalhe de dataset com colunas reais
+- painel de jobs
+- chat com perguntas sobre datasets, jobs e Novadrive
+- busca semântica no catálogo persistido de metadados
 
-## React Compiler
+## Configuração
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Variáveis suportadas no build:
 
-## Expanding the ESLint configuration
+- `VITE_API_BASE_URL`: URL base da API, incluindo `/api/v1`
+- `VITE_BASE_PATH`: base path do Vite para publicação estática
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Exemplo local:
+
+```bash
+cd web
+npm install
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev
+```
+
+## Publicação
+
+O repositório agora inclui workflow de GitHub Pages em:
+
+- [.github/workflows/deploy-frontend.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy-frontend.yml)
+
+No build automático de Pages, o frontend usa:
+
+- `VITE_BASE_PATH=/data-platform-copilot/`
+- `VITE_API_BASE_URL=https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1`

@@ -8,10 +8,12 @@ from app.api.schemas.chat import ChatResponse, ChatSource
 from app.api.services.dataset_service import get_dataset
 from app.api.services.job_service import get_job_incidents
 from app.api.services.lineage_service import get_lineage
+from app.api.services.llm_service import synthesize_grounded_answer
 from app.api.services.novadrive_service import (
     list_faturamento_por_concessionaria,
     list_performance_vendedores,
 )
+from app.api.services.retrieval_service import search_catalog, summarize_owners
 
 STOPWORDS = {
     "a",
@@ -37,6 +39,7 @@ STOPWORDS = {
     "o",
     "os",
     "owner",
+    "owners",
     "pipeline",
     "qual",
     "quais",
@@ -134,6 +137,23 @@ def _answers_about_owner(question: str) -> bool:
     return any(keyword in normalized_question for keyword in {"owner", "dono", "responsavel"})
 
 
+def _answers_about_environment(question: str) -> bool:
+    normalized_question = _normalize_text(question)
+    return any(
+        keyword in normalized_question
+        for keyword in {
+            "ambiente",
+            "catalogo",
+            "catalog",
+            "datasets",
+            "metadados",
+            "metadata",
+            "owner",
+            "owners",
+        }
+    )
+
+
 def _answers_about_job(question: str) -> bool:
     normalized_question = _normalize_text(question)
     return any(
@@ -210,9 +230,106 @@ def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
     return None
 
 
+def _extract_owner_hint(question: str) -> Optional[str]:
+    normalized_question = _normalize_text(question)
+    patterns = [
+        r"owner\s+([a-z0-9_-]+)",
+        r"owners\s+([a-z0-9_-]+)",
+        r"responsavel\s+([a-z0-9_-]+)",
+        r"dono\s+([a-z0-9_-]+)",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, normalized_question)
+        if match:
+            return match.group(1)
+
+    return None
+
+
+def _build_dataset_sources(datasets: list[dict], limit: int = 5) -> list[ChatSource]:
+    return [
+        ChatSource(type="dataset", id=dataset["dataset_id"], label="Metadados do dataset")
+        for dataset in datasets[:limit]
+    ]
+
+
+def _answer_owner_environment_question(question: str) -> Optional[ChatResponse]:
+    normalized_question = _normalize_text(question)
+
+    if "owners" in normalized_question and "quais" in normalized_question:
+        owners = summarize_owners()
+        if not owners:
+            return None
+
+        rendered = ", ".join(f"{item['owner']} ({item['dataset_count']})" for item in owners[:5])
+        return ChatResponse(
+            answer=f"Os owners com mais datasets catalogados são: {rendered}.",
+            sources=[
+                ChatSource(type="catalog", id="metadata_catalog", label="Catalogo persistido de metadados")
+            ],
+        )
+
+    owner_hint = _extract_owner_hint(question)
+    if not owner_hint:
+        return None
+
+    matching_datasets = [
+        dataset
+        for dataset in list_dataset_records()
+        if owner_hint in _normalize_text(dataset.get("owner") or "")
+    ]
+
+    if not matching_datasets:
+        return ChatResponse(
+            answer=f"Nao encontrei datasets catalogados para o owner {owner_hint}.",
+            sources=[ChatSource(type="catalog", id="metadata_catalog", label="Catalogo persistido de metadados")],
+        )
+
+    rendered = ", ".join(dataset["dataset_id"] for dataset in matching_datasets[:5])
+    extra_count = len(matching_datasets) - min(len(matching_datasets), 5)
+    suffix = f" e mais {extra_count}" if extra_count > 0 else ""
+    owner_name = matching_datasets[0].get("owner") or owner_hint
+
+    return ChatResponse(
+        answer=(
+            f"Encontrei {len(matching_datasets)} datasets do owner {owner_name}: "
+            f"{rendered}{suffix}."
+        ),
+        sources=_build_dataset_sources(matching_datasets),
+    )
+
+
+def _answer_from_semantic_retrieval(question: str) -> Optional[ChatResponse]:
+    retrieved = [result for result in search_catalog(question) if result["score"] >= 0.18]
+    if not retrieved:
+        return None
+
+    contexts = [result["dataset"] for result in retrieved]
+    grounded_answer = synthesize_grounded_answer(question, contexts)
+
+    if grounded_answer is None:
+        rendered = "; ".join(
+            (
+                f"{result['dataset_id']} (owner {result['dataset'].get('owner') or 'n/a'}"
+                f", source {result['dataset'].get('source_system') or 'n/a'})"
+            )
+            for result in retrieved[:3]
+        )
+        grounded_answer = f"Os datasets mais relevantes para essa pergunta são: {rendered}."
+
+    return ChatResponse(
+        answer=grounded_answer,
+        sources=_build_dataset_sources(contexts),
+    )
+
+
 def answer_question(question: str) -> ChatResponse:
     normalized_question = _normalize_text(question)
     explicit_dataset_match = DATASET_ID_PATTERN.search(normalized_question)
+    owner_catalog_query = _answers_about_owner(question) and any(
+        keyword in normalized_question for keyword in {"datasets", "owners", "ambiente", "catalogo"}
+    )
 
     if _answers_about_novadrive(question) and explicit_dataset_match is None:
         novadrive_response = _answer_novadrive_question(question)
@@ -241,6 +358,11 @@ def answer_question(question: str) -> ChatResponse:
                 ),
             ],
         )
+
+    if owner_catalog_query and explicit_dataset_match is None:
+        owner_response = _answer_owner_environment_question(question)
+        if owner_response is not None:
+            return owner_response
 
     dataset = _resolve_dataset(question)
     if dataset is not None:
@@ -293,6 +415,11 @@ def answer_question(question: str) -> ChatResponse:
             sources=sources,
         )
 
+    if _answers_about_owner(question) and explicit_dataset_match is None:
+        owner_response = _answer_owner_environment_question(question)
+        if owner_response is not None:
+            return owner_response
+
     if _answers_about_job(question):
         incident = _resolve_job(question) or get_job_incidents("12345")
 
@@ -315,6 +442,15 @@ def answer_question(question: str) -> ChatResponse:
                 ),
             ],
         )
+
+    if _answers_about_environment(question):
+        retrieved_response = _answer_from_semantic_retrieval(question)
+        if retrieved_response is not None:
+            return retrieved_response
+
+    retrieved_response = _answer_from_semantic_retrieval(question)
+    if retrieved_response is not None:
+        return retrieved_response
 
     return ChatResponse(
         answer=(

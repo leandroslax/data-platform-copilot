@@ -13,6 +13,9 @@ Hoje o projeto já entrega um MVP funcional com:
 - observabilidade local com Prometheus + Grafana para API e orquestração
 - dashboards dedicados da Novadrive para visão executiva e qualidade de dados
 - descoberta real de datasets e detalhes de datasets via Databricks
+- catálogo persistido de metadados ingeridos em arquivo local
+- busca semântica sobre o catálogo com embeddings
+- síntese grounded opcional com LLM quando configurado
 - consultas analíticas reais da Novadrive via BigQuery Gold
 - fallback seguro para mock quando uma fonte ainda não está disponível no workspace
 
@@ -27,11 +30,13 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - `GET /api/v1/health`
 - `GET /api/v1/datasets`
 - `GET /api/v1/datasets/{dataset_id}`
+- `GET /api/v1/search`
 - `GET /api/v1/jobs`
 - `GET /api/v1/jobs/{job_id}/incidents`
 - `GET /api/v1/lineage/{dataset_id}`
 - `GET /api/v1/novadrive/faturamento/concessionarias`
 - `GET /api/v1/novadrive/performance/vendedores`
+- `POST /api/v1/metadata/sync`
 - `POST /api/v1/chat`
 
 ### O que já está real hoje
@@ -45,12 +50,15 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - chat respondendo perguntas sobre indicadores da Novadrive
 - chat respondendo perguntas sobre datasets explícitos como `samples.tpch.orders`
 - chat respondendo owner e colunas de datasets reais, incluindo tabelas BigQuery da Novadrive
+- chat respondendo perguntas mais amplas sobre o ambiente, incluindo consultas por owner
+- catálogo persistido em `pipelines/metadata/state/`
+- endpoint de busca semântica sobre datasets catalogados
 
 ### O que ainda usa fallback
 
 - jobs usam mock quando o workspace Databricks ainda não possui jobs reais
 - lineage usa mock quando o workspace Databricks não expõe uma API utilizável
-- o chat ainda usa roteamento determinístico e fontes estruturadas, não um fluxo completo com LLM + RAG
+- a síntese com LLM é opcional e depende de `OPENAI_API_KEY` e `OPENAI_RESPONSE_MODEL`
 
 ## Direção do Produto
 
@@ -66,8 +74,9 @@ Evolução desejada:
 
 - pipelines de ingestão de metadados e documentos reais
 - camadas bronze, silver e gold normalizadas
-- retrieval semântico e embeddings
-- síntese com LLM em cima do contexto grounded da plataforma
+- ranking e filtros analíticos mais ricos no chat
+- recuperação híbrida de metadados e documentação
+- expansão da camada de copiloto para troubleshooting mais amplo
 
 ## Arquitetura de Alto Nível
 
@@ -199,6 +208,19 @@ Observações:
 - se `DATABRICKS_HOST` e `DATABRICKS_TOKEN` estiverem vazios, a API faz fallback para mock quando aplicável
 - o ambiente `dev` no Cloud Run está configurado via Terraform para usar o catálogo `samples`
 - o desenvolvimento local do frontend está habilitado via CORS para portas comuns do Vite como `5173`, `5174` e `4173`
+- publicação do frontend em GitHub Pages também está preparada
+- o catálogo persistido e o índice semântico ficam em `pipelines/metadata/state/`
+
+Variáveis adicionais para a fase atual:
+
+- `METADATA_CATALOG_PATH`
+- `METADATA_EMBEDDING_INDEX_PATH`
+- `METADATA_OWNER_DEFAULT`
+- `RETRIEVAL_RESULT_LIMIT`
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL`
+- `OPENAI_EMBEDDING_MODEL`
+- `OPENAI_RESPONSE_MODEL`
 
 ## Desenvolvimento Local do Backend
 
@@ -224,7 +246,16 @@ Checks rápidos:
 curl http://127.0.0.1:8000/api/v1/health
 curl http://127.0.0.1:8000/api/v1/datasets
 curl http://127.0.0.1:8000/api/v1/datasets/samples.tpch.orders
+curl "http://127.0.0.1:8000/api/v1/search?q=owner%20sales-platform"
+curl -X POST http://127.0.0.1:8000/api/v1/metadata/sync
 curl http://127.0.0.1:8000/metrics
+```
+
+Sincronização local do catálogo:
+
+```bash
+source .venv/bin/activate
+python pipelines/metadata/sync_metadata_catalog.py
 ```
 
 ## Observabilidade Local
@@ -306,6 +337,7 @@ Hoje o frontend suporta:
 - lista de datasets da API real
 - detalhe do dataset com colunas reais
 - painel de jobs
+- busca semântica no catálogo persistido
 - visualização indireta dos indicadores da Novadrive via chat e endpoints da API
 - card de destaque para dataset principal
 
@@ -314,7 +346,7 @@ Para rodar localmente:
 ```bash
 cd web
 npm install
-npm run dev
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev
 ```
 
 Abrir:
@@ -322,6 +354,11 @@ Abrir:
 - [http://localhost:5173](http://localhost:5173)
 
 Se o Vite subir em outra porta, confirme que essa origem está liberada no CORS do backend.
+
+Publicação:
+
+- o workflow de GitHub Pages está em [.github/workflows/deploy-frontend.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy-frontend.yml)
+- o build publicado usa o backend já implantado no Cloud Run
 
 ## Testes
 
@@ -335,10 +372,12 @@ Cobertura atual inclui:
 
 - comportamento do cliente Databricks
 - fluxo de dataset repository e dataset detail
+- persistência do catálogo ingerido
 - fallback de jobs
 - fallback de lineage
+- rota de busca semântica
 - endpoints e service layer da Novadrive
-- roteamento do chat para owner, colunas, jobs e resposta fallback
+- roteamento do chat para owner, colunas, jobs, retrieval semântico e resposta fallback
 
 Os testes do backend limpam variáveis do Databricks quando necessário para manter o comportamento mock determinístico.
 
@@ -368,6 +407,7 @@ Push em `main` dispara:
 Workflow:
 
 - [.github/workflows/deploy.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy.yml)
+- [.github/workflows/deploy-frontend.yml](/Users/leandrosantos/Downloads/data-platform-copilot/.github/workflows/deploy-frontend.yml)
 
 ## Infraestrutura
 
@@ -432,14 +472,15 @@ Arquivos principais:
 - [orchestration/airflow/requirements-airflow.txt](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/requirements-airflow.txt)
 - [orchestration/airflow/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/airflow/README.md)
 
-## Próximos Passos
+## Novos Componentes do Copilot
 
-- evoluir de fallback/mock para fluxos orquestrados de ponta a ponta
-- persistir metadados ingeridos fora das chamadas diretas da API
-- expandir o chat para perguntas mais amplas sobre o ambiente, como consultas por owner
-- adicionar retrieval semântico e embeddings
-- conectar o copilot a um LLM para síntese grounded de respostas
-- publicar o frontend demo
+- [app/api/services/metadata_catalog_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/metadata_catalog_service.py)
+- [app/api/services/retrieval_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/retrieval_service.py)
+- [app/api/services/embedding_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/embedding_service.py)
+- [app/api/services/llm_service.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/services/llm_service.py)
+- [app/api/routes/search.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/routes/search.py)
+- [app/api/routes/metadata.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/routes/metadata.py)
+- [pipelines/metadata/sync_metadata_catalog.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/sync_metadata_catalog.py)
 
 ## Endpoints do Ambiente Dev
 
@@ -454,10 +495,12 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/h
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/datasets
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/datasets/samples.tpch.orders
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/datasets/data-platform-copilot-dev.silver_novadrive.vendas
+curl "https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/search?q=owner%20sales-platform"
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/jobs
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/lineage/main.sales.orders
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/concessionarias
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/performance/vendedores
+curl -X POST https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/metadata/sync
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"Quais colunas existem em samples.tpch.orders?"}'
@@ -470,6 +513,9 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question":"Quais vendedores têm melhor performance na Novadrive?"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Quais datasets pertencem ao owner sales-platform?"}'
 ```
 
 ## O que já foi implementado
@@ -485,11 +531,15 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - stack local de observabilidade com Prometheus, Grafana, cAdvisor e postgres-exporter
 - dashboard executivo da Novadrive com receita, geografia, ranking comercial e ticket médio
 - dashboard de qualidade e pipeline da Novadrive com freshness, duplicidade e snapshots diários
+- persistência do catálogo de metadados fora das chamadas diretas da API
+- busca semântica com embeddings e endpoint dedicado de search
+- integração opcional com LLM para síntese grounded de respostas
 - módulos Terraform e ambiente `dev` no GCP
 - deploy da API no Cloud Run
-- workflows de CI e deploy no GitHub Actions
+- workflows de CI, deploy da API e deploy do frontend no GitHub Actions
 - frontend demo em React conectado ao backend real
-- melhoria do chat para resolver datasets explícitos e responder colunas
+- frontend demo preparado para publicação em GitHub Pages
+- melhoria do chat para resolver datasets explícitos, responder colunas e consultar datasets por owner
 - melhoria do chat para responder perguntas sobre indicadores da Novadrive
 - fallback de metadados do BigQuery para dataset detail e schema da Novadrive
 - correção da modelagem silver para deduplicação antes da construção da gold
@@ -497,8 +547,8 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 
 ## Próximos Passos Sugeridos
 
-- persistir metadados ingeridos fora das chamadas diretas da API
-- expandir o chat para perguntas mais amplas sobre o ambiente, como consultas por owner
-- adicionar retrieval semântico e embeddings
-- conectar o copilot a um LLM para síntese grounded de respostas
-- publicar o frontend demo
+- ampliar a persistência para documentos e runbooks, não só datasets
+- evoluir o retrieval de embeddings para modo híbrido com documentação operacional
+- enriquecer o chat com filtros, comparações e perguntas históricas mais amplas
+- adicionar ranking temporal e séries comparativas no frontend demo
+- criar deploy de frontend com domínio próprio, se desejar

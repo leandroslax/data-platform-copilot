@@ -19,7 +19,48 @@ from app.api.services import chat_service
 client = TestClient(app)
 
 
-def test_chat_answers_orders_question() -> None:
+def test_chat_answers_orders_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "list_dataset_records",
+        lambda: [
+            {
+                "dataset_id": "main.sales.orders",
+                "name": "main.sales.orders",
+                "owner": "sales-platform",
+                "type": "table",
+                "columns": [],
+                "documentation": [],
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        chat_service,
+        "get_dataset",
+        lambda dataset_id: DatasetDetailResponse(
+            dataset_id=dataset_id,
+            name=dataset_id,
+            catalog="main",
+            schema="sales",
+            table="orders",
+            type="table",
+            description="Orders dataset",
+            owner="sales-platform",
+            columns=[],
+            documentation=[],
+        ),
+    )
+    monkeypatch.setattr(
+        chat_service,
+        "get_lineage",
+        lambda dataset_id: LineageResponse(
+            dataset_id=dataset_id,
+            upstream=[],
+            downstream=[],
+            related_jobs=[],
+        ),
+    )
+
     response = client.post(
         "/api/v1/chat",
         json={"question": "Quem e o owner do dataset orders?"},
@@ -29,7 +70,7 @@ def test_chat_answers_orders_question() -> None:
 
     payload = response.json()
     assert "main.sales.orders" in payload["answer"]
-    assert len(payload["sources"]) == 2
+    assert payload["sources"][0]["id"] == "main.sales.orders"
 
 
 def test_chat_answers_job_question() -> None:
@@ -43,6 +84,63 @@ def test_chat_answers_job_question() -> None:
     payload = response.json()
     assert "sales_orders_pipeline" in payload["answer"]
     assert len(payload["sources"]) == 2
+
+
+def test_chat_answers_owner_environment_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "list_dataset_records",
+        lambda: [
+            {
+                "dataset_id": "main.sales.orders",
+                "name": "main.sales.orders",
+                "owner": "sales-platform",
+                "type": "table",
+                "columns": [],
+                "documentation": [],
+            },
+            {
+                "dataset_id": "main.sales.customers",
+                "name": "main.sales.customers",
+                "owner": "sales-platform",
+                "type": "table",
+                "columns": [],
+                "documentation": [],
+            },
+        ],
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Quais datasets pertencem ao owner sales-platform?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "2 datasets" in payload["answer"]
+    assert "main.sales.orders" in payload["answer"]
+    assert payload["sources"][0]["id"] == "main.sales.orders"
+
+
+def test_chat_answers_owner_summary_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "summarize_owners",
+        lambda: [
+            {"owner": "sales-platform", "dataset_count": 2},
+            {"owner": "finance-data", "dataset_count": 1},
+        ],
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Quais owners existem no ambiente?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "sales-platform (2)" in payload["answer"]
+    assert payload["sources"][0]["id"] == "metadata_catalog"
 
 
 def test_chat_answers_explicit_dataset_owner_question(monkeypatch) -> None:
@@ -290,7 +388,10 @@ def test_chat_answers_novadrive_vendedor_question(monkeypatch) -> None:
     assert payload["sources"][0]["id"] == "performance_vendedores"
 
 
-def test_chat_returns_fallback_when_context_is_missing() -> None:
+def test_chat_returns_fallback_when_context_is_missing(monkeypatch) -> None:
+    monkeypatch.setattr(chat_service, "list_dataset_records", lambda: [])
+    monkeypatch.setattr(chat_service, "search_catalog", lambda question: [])
+
     response = client.post(
         "/api/v1/chat",
         json={"question": "Me fale sobre marketing attribution"},
@@ -301,3 +402,36 @@ def test_chat_returns_fallback_when_context_is_missing() -> None:
     payload = response.json()
     assert "Ainda não encontrei contexto suficiente" in payload["answer"]
     assert payload["sources"] == []
+
+
+def test_chat_answers_semantic_environment_question(monkeypatch) -> None:
+    monkeypatch.setattr(chat_service, "list_dataset_records", lambda: [])
+    monkeypatch.setattr(
+        chat_service,
+        "search_catalog",
+        lambda question: [
+            {
+                "dataset_id": "main.finance.invoices",
+                "name": "main.finance.invoices",
+                "score": 0.91,
+                "dataset": {
+                    "dataset_id": "main.finance.invoices",
+                    "owner": "finance-data",
+                    "description": "Invoice dataset for finance reconciliation.",
+                    "source_system": "mock",
+                    "columns": [],
+                },
+            }
+        ],
+    )
+    monkeypatch.setattr(chat_service, "synthesize_grounded_answer", lambda question, contexts: None)
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Me fale sobre invoices e reconciliacao financeira"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "main.finance.invoices" in payload["answer"]
+    assert payload["sources"][0]["id"] == "main.finance.invoices"

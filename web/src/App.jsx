@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-const API_BASE = 'https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1'
 const DEFAULT_DATASET = 'samples.tpch.orders'
 
 function App() {
@@ -22,10 +22,15 @@ function App() {
   const [jobs, setJobs] = useState([])
   const [jobsLoading, setJobsLoading] = useState(true)
   const [jobsError, setJobsError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('owner sales-platform')
+  const [searchResults, setSearchResults] = useState([])
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState('')
 
   useEffect(() => {
     loadDatasets()
     loadJobs()
+    searchCatalog('owner sales-platform')
   }, [])
 
   useEffect(() => {
@@ -135,6 +140,28 @@ function App() {
     }
   }
 
+  async function searchCatalog(query = searchQuery) {
+    if (!query.trim()) return
+
+    setSearchLoading(true)
+    setSearchError('')
+
+    try {
+      const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&limit=6`)
+      if (!response.ok) {
+        throw new Error(`search request failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setSearchResults(data.items || [])
+    } catch (error) {
+      console.error(error)
+      setSearchError(String(error))
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
   return (
     <div className="app-shell">
       <header className="hero">
@@ -191,6 +218,13 @@ function App() {
                 onClick={() => setQuestion('Quais colunas existem em samples.tpch.orders?')}
               >
                 Usar exemplo
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setQuestion('Quais datasets pertencem ao owner sales-platform?')}
+              >
+                Perguntar por owner
               </button>
             </div>
           </form>
@@ -294,6 +328,50 @@ function App() {
                 >
                   <strong>{dataset.dataset_id}</strong>
                   <span>{dataset.owner || 'Sem owner'}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <div className="panel-heading">
+            <h2>Busca Semantica</h2>
+            <span className="panel-kicker">Catalogo persistido + embeddings</span>
+          </div>
+
+          <form
+            className="search-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              searchCatalog()
+            }}
+          >
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Ex.: owner sales-platform ou novadrive revenue"
+            />
+            <button type="submit" disabled={searchLoading}>
+              {searchLoading ? 'Buscando...' : 'Buscar'}
+            </button>
+          </form>
+
+          {searchError && <p className="error-text">{searchError}</p>}
+
+          {!searchError && (
+            <div className="search-results">
+              {searchResults.map((item) => (
+                <button
+                  key={item.dataset_id}
+                  className="dataset-item"
+                  onClick={() => setSelectedDatasetId(item.dataset_id)}
+                >
+                  <strong>{item.dataset_id}</strong>
+                  <span>
+                    {item.owner || 'Sem owner'} • score {Number(item.score).toFixed(2)}
+                  </span>
                 </button>
               ))}
             </div>

@@ -2,6 +2,8 @@ from app.api.repositories import dataset_repository
 
 
 def test_list_datasets_uses_mock_data_when_databricks_is_not_configured(monkeypatch) -> None:
+    monkeypatch.setattr(dataset_repository.settings, "metadata_catalog_path", "/tmp/does-not-exist.json")
+
     class StubDatabricksClient:
         def is_configured(self) -> bool:
             return False
@@ -14,7 +16,12 @@ def test_list_datasets_uses_mock_data_when_databricks_is_not_configured(monkeypa
                 }
             ]
 
+    class StubBigQueryClient:
+        def list_tables(self, dataset_name: str):
+            return []
+
     monkeypatch.setattr(dataset_repository, "DatabricksClient", StubDatabricksClient)
+    monkeypatch.setattr(dataset_repository, "BigQueryClient", StubBigQueryClient)
 
     datasets = dataset_repository.list_datasets()
 
@@ -23,6 +30,8 @@ def test_list_datasets_uses_mock_data_when_databricks_is_not_configured(monkeypa
 
 
 def test_list_datasets_uses_databricks_when_configured(monkeypatch) -> None:
+    monkeypatch.setattr(dataset_repository.settings, "metadata_catalog_path", "/tmp/does-not-exist.json")
+
     class StubDatabricksClient:
         def is_configured(self) -> bool:
             return True
@@ -45,7 +54,12 @@ def test_list_datasets_uses_databricks_when_configured(monkeypatch) -> None:
                 }
             ]
 
+    class StubBigQueryClient:
+        def list_tables(self, dataset_name: str):
+            return []
+
     monkeypatch.setattr(dataset_repository, "DatabricksClient", StubDatabricksClient)
+    monkeypatch.setattr(dataset_repository, "BigQueryClient", StubBigQueryClient)
 
     datasets = dataset_repository.list_datasets()
 
@@ -68,11 +82,14 @@ def test_list_datasets_uses_databricks_when_configured(monkeypatch) -> None:
             "schema": "gold",
             "type": "table",
             "documentation": [],
+            "source_system": "databricks",
         }
     ]
 
 
 def test_find_dataset_by_id_reads_detail_from_databricks_when_configured(monkeypatch) -> None:
+    monkeypatch.setattr(dataset_repository.settings, "metadata_catalog_path", "/tmp/does-not-exist.json")
+
     class StubDatabricksClient:
         def is_configured(self) -> bool:
             return True
@@ -114,6 +131,8 @@ def test_find_dataset_by_id_reads_detail_from_databricks_when_configured(monkeyp
 
 
 def test_find_dataset_by_id_reads_detail_from_bigquery_when_databricks_does_not_match(monkeypatch) -> None:
+    monkeypatch.setattr(dataset_repository.settings, "metadata_catalog_path", "/tmp/does-not-exist.json")
+
     class StubDatabricksClient:
         def is_configured(self) -> bool:
             return False
@@ -155,3 +174,35 @@ def test_find_dataset_by_id_reads_detail_from_bigquery_when_databricks_does_not_
     assert dataset["dataset_id"] == "data-platform-copilot-dev.silver_novadrive.vendas"
     assert dataset["schema"] == "silver_novadrive"
     assert dataset["columns"][0]["name"] == "id_venda"
+
+
+def test_list_datasets_reads_from_persisted_catalog_when_available(tmp_path, monkeypatch) -> None:
+    snapshot_path = tmp_path / "catalog_snapshot.json"
+    snapshot_path.write_text(
+        """
+        {
+          "generated_at": "2026-04-02T23:00:00Z",
+          "dataset_count": 1,
+          "datasets": [
+            {
+              "dataset_id": "catalog.dev.sample",
+              "name": "catalog.dev.sample",
+              "catalog": "catalog",
+              "schema": "dev",
+              "table": "sample",
+              "type": "table",
+              "owner": "catalog-owner",
+              "columns": [],
+              "documentation": []
+            }
+          ]
+        }
+        """.strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(dataset_repository.settings, "metadata_catalog_path", str(snapshot_path))
+
+    datasets = dataset_repository.list_datasets()
+
+    assert len(datasets) == 1
+    assert datasets[0]["dataset_id"] == "catalog.dev.sample"
