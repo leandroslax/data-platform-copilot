@@ -3,6 +3,7 @@ import './App.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1'
 const DEFAULT_DATASET = 'samples.tpch.orders'
+const IS_PUBLIC_DEMO = API_BASE.includes('run.app')
 
 function App() {
   const [question, setQuestion] = useState('Quais colunas existem em samples.tpch.orders?')
@@ -171,6 +172,10 @@ function App() {
           <p className="hero-copy">
             Demo UI for the FastAPI backend running on Cloud Run with Databricks-backed dataset discovery.
           </p>
+          <div className="hero-badges">
+            <span className="hero-badge">{IS_PUBLIC_DEMO ? 'Demo publico' : 'Ambiente local'}</span>
+            <span className="hero-badge hero-badge-muted">{API_BASE}</span>
+          </div>
         </div>
 
         <div className="hero-card">
@@ -226,6 +231,13 @@ function App() {
               >
                 Perguntar por owner
               </button>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setQuestion('Compare o faturamento da Novadrive entre a ultima semana e a semana anterior')}
+              >
+                Comparar semanas
+              </button>
             </div>
           </form>
 
@@ -268,10 +280,10 @@ function App() {
                   <span>Owner</span>
                   <strong>{datasetDetail.owner || 'N/A'}</strong>
                 </div>
-                <div className="meta-card">
-                  <span>Type</span>
-                  <strong>{datasetDetail.type}</strong>
-                </div>
+              <div className="meta-card">
+                <span>Type</span>
+                <strong>{datasetDetail.type}</strong>
+              </div>
                 <div className="meta-card">
                   <span>Schema</span>
                   <strong>{datasetDetail.schema || 'N/A'}</strong>
@@ -351,7 +363,7 @@ function App() {
               type="text"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Ex.: owner sales-platform ou novadrive revenue"
+              placeholder="Ex.: owner data-platform, runbook airflow ou novadrive previsao"
             />
             <button type="submit" disabled={searchLoading}>
               {searchLoading ? 'Buscando...' : 'Buscar'}
@@ -364,13 +376,23 @@ function App() {
             <div className="search-results">
               {searchResults.map((item) => (
                 <button
-                  key={item.dataset_id}
+                  key={item.item_id || item.dataset_id}
                   className="dataset-item"
-                  onClick={() => setSelectedDatasetId(item.dataset_id)}
+                  onClick={() => {
+                    if (item.item_type === 'document') {
+                      setQuestion(`Resuma o documento ${item.name}`)
+                      return
+                    }
+                    if (item.dataset_id) {
+                      setSelectedDatasetId(item.dataset_id)
+                    }
+                  }}
                 >
-                  <strong>{item.dataset_id}</strong>
+                  <strong>{item.dataset_id || item.name}</strong>
                   <span>
-                    {item.owner || 'Sem owner'} • score {Number(item.score).toFixed(2)}
+                    {item.item_type === 'document'
+                      ? `${item.path || 'documentacao'} • score ${Number(item.score).toFixed(2)}`
+                      : `${item.owner || 'Sem owner'} • score ${Number(item.score).toFixed(2)}`}
                   </span>
                 </button>
               ))}

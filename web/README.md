@@ -7,8 +7,10 @@ O frontend demo em [web/](/Users/leandrosantos/Downloads/data-platform-copilot/w
 - lista de datasets vindos da API
 - detalhe de dataset com colunas reais
 - painel de jobs
-- chat com perguntas sobre datasets, jobs e Novadrive
-- busca semântica no catálogo persistido de metadados
+- chat com perguntas sobre datasets, jobs, documentos operacionais e Novadrive
+- busca semântica híbrida no catálogo persistido de metadados e documentação
+- exemplos de comparação histórica da Novadrive
+- badge visual indicando se o demo está em modo público ou local
 
 ## Configuração
 
@@ -23,6 +25,13 @@ Exemplo local:
 cd web
 npm install
 VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev
+```
+
+Se quiser testar explicitamente o demo local contra a API local e manter uma URL fixa:
+
+```bash
+cd web
+VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1 npm run dev -- --host 127.0.0.1 --port 4173
 ```
 
 ## Publicação

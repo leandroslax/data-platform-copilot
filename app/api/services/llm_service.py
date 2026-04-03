@@ -13,17 +13,27 @@ def synthesize_grounded_answer(question: str, contexts: list[dict]) -> str | Non
     if not is_llm_configured() or not contexts:
         return None
 
-    grounding_text = "\n\n".join(
-        [
-            (
-                f"Dataset: {context['dataset_id']}\n"
-                f"Owner: {context.get('owner') or 'n/a'}\n"
-                f"Description: {context.get('description') or 'n/a'}\n"
-                f"Columns: {', '.join(column.get('name', '') for column in context.get('columns', [])[:12])}"
+    grounding_chunks = []
+    for context in contexts:
+        if context.get("item_type") == "document":
+            grounding_chunks.append(
+                (
+                    f"Document: {context.get('name') or context.get('item_id')}\n"
+                    f"Path: {context.get('path') or 'n/a'}\n"
+                    f"Summary: {context.get('description') or 'n/a'}"
+                )
             )
-            for context in contexts
-        ]
-    )
+        else:
+            grounding_chunks.append(
+                (
+                    f"Dataset: {context['dataset_id']}\n"
+                    f"Owner: {context.get('owner') or 'n/a'}\n"
+                    f"Description: {context.get('description') or 'n/a'}\n"
+                    f"Columns: {', '.join(column.get('name', '') for column in context.get('columns', [])[:12])}"
+                )
+            )
+
+    grounding_text = "\n\n".join(grounding_chunks)
 
     payload = json.dumps(
         {

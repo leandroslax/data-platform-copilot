@@ -27,6 +27,19 @@ class ResumoFaturamentoNovadriveResponse(BaseModel):
     ultima_venda: Optional[str] = None
 
 
+class ComparativoFaturamentoNovadriveResponse(BaseModel):
+    dias: int
+    periodo_atual_inicio: str
+    periodo_atual_fim: str
+    periodo_anterior_inicio: str
+    periodo_anterior_fim: str
+    faturamento_periodo_atual: float
+    faturamento_periodo_anterior: float
+    vendas_periodo_atual: int
+    vendas_periodo_anterior: int
+    variacao_percentual: float
+
+
 class PerformanceVendedorItem(BaseModel):
     id_vendedores: int
     vendedor_nome: str

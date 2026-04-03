@@ -23,6 +23,19 @@ class Settings(BaseModel):
         "METADATA_EMBEDDING_INDEX_PATH",
         str(Path("pipelines/metadata/state/catalog_embeddings.json")),
     )
+    metadata_document_globs: str = os.getenv(
+        "METADATA_DOCUMENT_GLOBS",
+        ",".join(
+            [
+                "README.md",
+                "docs/*.md",
+                "orchestration/airflow/README.md",
+                "orchestration/observability/README.md",
+                "orchestration/composer/README.md",
+                "web/README.md",
+            ]
+        ),
+    )
     metadata_owner_default: str = os.getenv("METADATA_OWNER_DEFAULT", "data-platform")
     retrieval_result_limit: int = int(os.getenv("RETRIEVAL_RESULT_LIMIT", "5"))
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")

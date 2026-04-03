@@ -9,8 +9,24 @@ from app.api.services.embedding_service import embed_text
 from app.api.services.metadata_catalog_service import refresh_metadata_catalog
 
 
+def _catalog_snapshot_path() -> Path:
+    return Path(settings.metadata_catalog_path)
+
+
 def _embedding_index_path() -> Path:
     return Path(settings.metadata_embedding_index_path)
+
+
+def _load_catalog_snapshot() -> dict[str, Any]:
+    snapshot_path = _catalog_snapshot_path()
+    if not snapshot_path.exists():
+        refresh_metadata_catalog()
+
+    try:
+        return json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError, FileNotFoundError):
+        refresh_metadata_catalog()
+        return json.loads(snapshot_path.read_text(encoding="utf-8"))
 
 
 def _load_embedding_index() -> dict[str, Any]:
@@ -40,24 +56,48 @@ def search_catalog(query: str, limit: int | None = None) -> list[dict[str, Any]]
     search_limit = limit or settings.retrieval_result_limit
     query_embedding = embed_text(query)
     index = _load_embedding_index()
+    snapshot = _load_catalog_snapshot()
     datasets_by_id = {dataset["dataset_id"]: dataset for dataset in list_datasets()}
+    documents_by_id = {document["item_id"]: document for document in snapshot.get("documents", [])}
 
     scored_items = []
     for item in index.get("items", []):
         score = _cosine_similarity(query_embedding, item.get("embedding", []))
-        dataset = datasets_by_id.get(item["dataset_id"])
-        if dataset is None:
-            continue
+        item_type = item.get("item_type", "dataset")
+
+        if item_type == "document":
+            document = documents_by_id.get(item["item_id"])
+            if document is None:
+                continue
+            context = {
+                "item_type": "document",
+                "item_id": document["item_id"],
+                "name": document["name"],
+                "description": document.get("description"),
+                "path": document.get("path"),
+                "source_system": document.get("source_system"),
+            }
+        else:
+            dataset = datasets_by_id.get(item["dataset_id"])
+            if dataset is None:
+                continue
+            context = {
+                "item_type": "dataset",
+                **dataset,
+            }
 
         scored_items.append(
             {
-                "dataset_id": item["dataset_id"],
-                "name": item.get("name") or item["dataset_id"],
+                "item_id": item["item_id"],
+                "item_type": item_type,
+                "dataset_id": item.get("dataset_id"),
+                "name": item.get("name") or item.get("dataset_id") or item["item_id"],
                 "owner": item.get("owner"),
                 "description": item.get("description"),
                 "source_system": item.get("source_system"),
+                "path": item.get("path"),
                 "score": round(score, 4),
-                "dataset": dataset,
+                "context": context,
             }
         )
 

@@ -13,11 +13,14 @@ def search(q: str = Query(min_length=2), limit: int = Query(default=5, ge=1, le=
         query=q,
         items=[
             SearchResult(
-                dataset_id=item["dataset_id"],
+                item_id=item["item_id"],
+                item_type=item["item_type"],
+                dataset_id=item.get("dataset_id"),
                 name=item["name"],
                 owner=item.get("owner"),
                 description=item.get("description"),
                 source_system=item.get("source_system"),
+                path=item.get("path"),
                 score=item["score"],
             )
             for item in results

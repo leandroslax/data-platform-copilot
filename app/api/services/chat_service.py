@@ -10,6 +10,7 @@ from app.api.services.job_service import get_job_incidents
 from app.api.services.lineage_service import get_lineage
 from app.api.services.llm_service import synthesize_grounded_answer
 from app.api.services.novadrive_service import (
+    get_comparativo_faturamento_novadrive,
     get_resumo_faturamento_novadrive,
     list_faturamento_por_concessionaria,
     list_previsao_faturamento,
@@ -69,6 +70,10 @@ def _normalize_text(text: str) -> str:
 def _format_currency_brl(value: float) -> str:
     formatted = f"{value:,.2f}"
     return f"R$ {formatted.replace(',', 'X').replace('.', ',').replace('X', '.')}"
+
+
+def _format_percentage_ptbr(value: float) -> str:
+    return f"{value:.2f}%".replace(".", ",")
 
 
 def _tokenize(text: str) -> set[str]:
@@ -159,6 +164,11 @@ def _answers_about_environment(question: str) -> bool:
             "metadata",
             "owner",
             "owners",
+            "runbook",
+            "runbooks",
+            "documentacao",
+            "documento",
+            "docs",
         }
     )
 
@@ -192,12 +202,50 @@ def _answers_about_novadrive(question: str) -> bool:
             "forecast",
             "proxima semana",
             "proximos dias",
+            "comparativo",
+            "comparacao",
+            "ultima semana",
+            "ultimos 7 dias",
+            "ultimos sete dias",
+            "variacao",
+            "cresceu",
+            "queda",
         }
     )
 
 
 def _answer_novadrive_question(question: str) -> Optional[ChatResponse]:
     normalized_question = _normalize_text(question)
+
+    if (
+        "novadrive" in normalized_question
+        and "faturamento" in normalized_question
+        and any(
+            keyword in normalized_question
+            for keyword in {"compar", "ultima semana", "ultimos 7 dias", "variacao", "cresceu", "queda"}
+        )
+    ):
+        comparativo = get_comparativo_faturamento_novadrive(days=7)
+        direction = "crescimento" if comparativo.variacao_percentual >= 0 else "queda"
+        return ChatResponse(
+            answer=(
+                f"Nos ultimos {comparativo.dias} dias ({comparativo.periodo_atual_inicio} a "
+                f"{comparativo.periodo_atual_fim}), a Novadrive faturou "
+                f"{_format_currency_brl(comparativo.faturamento_periodo_atual)} em "
+                f"{comparativo.vendas_periodo_atual} vendas. No periodo anterior "
+                f"({comparativo.periodo_anterior_inicio} a {comparativo.periodo_anterior_fim}), "
+                f"o faturamento foi de {_format_currency_brl(comparativo.faturamento_periodo_anterior)} "
+                f"em {comparativo.vendas_periodo_anterior} vendas, representando "
+                f"{direction} de {_format_percentage_ptbr(abs(comparativo.variacao_percentual))}."
+            ),
+            sources=[
+                ChatSource(
+                    type="novadrive_gold",
+                    id="faturamento_comparativo",
+                    label="Gold Novadrive - comparativo historico de faturamento",
+                )
+            ],
+        )
 
     if (
         "novadrive" in normalized_question
@@ -314,11 +362,22 @@ def _extract_owner_hint(question: str) -> Optional[str]:
     return None
 
 
-def _build_dataset_sources(datasets: list[dict], limit: int = 5) -> list[ChatSource]:
-    return [
-        ChatSource(type="dataset", id=dataset["dataset_id"], label="Metadados do dataset")
-        for dataset in datasets[:limit]
-    ]
+def _build_retrieval_sources(items: list[dict], limit: int = 5) -> list[ChatSource]:
+    sources: list[ChatSource] = []
+    for item in items[:limit]:
+        if item.get("item_type") == "document":
+            sources.append(
+                ChatSource(
+                    type="document",
+                    id=item["item_id"],
+                    label=f"Documento operacional: {item.get('name') or item.get('path')}",
+                )
+            )
+        else:
+            dataset_id = item.get("dataset_id") or item.get("context", {}).get("dataset_id")
+            if dataset_id:
+                sources.append(ChatSource(type="dataset", id=dataset_id, label="Metadados do dataset"))
+    return sources
 
 
 def _answer_owner_environment_question(question: str) -> Optional[ChatResponse]:
@@ -363,7 +422,9 @@ def _answer_owner_environment_question(question: str) -> Optional[ChatResponse]:
             f"Encontrei {len(matching_datasets)} datasets do owner {owner_name}: "
             f"{rendered}{suffix}."
         ),
-        sources=_build_dataset_sources(matching_datasets),
+        sources=_build_retrieval_sources(
+            [{"item_type": "dataset", "dataset_id": dataset["dataset_id"]} for dataset in matching_datasets]
+        ),
     )
 
 
@@ -372,22 +433,26 @@ def _answer_from_semantic_retrieval(question: str) -> Optional[ChatResponse]:
     if not retrieved:
         return None
 
-    contexts = [result["dataset"] for result in retrieved]
+    contexts = [result["context"] for result in retrieved]
     grounded_answer = synthesize_grounded_answer(question, contexts)
 
     if grounded_answer is None:
-        rendered = "; ".join(
-            (
-                f"{result['dataset_id']} (owner {result['dataset'].get('owner') or 'n/a'}"
-                f", source {result['dataset'].get('source_system') or 'n/a'})"
-            )
-            for result in retrieved[:3]
-        )
-        grounded_answer = f"Os datasets mais relevantes para essa pergunta são: {rendered}."
+        rendered_items = []
+        for result in retrieved[:3]:
+            if result["item_type"] == "document":
+                rendered_items.append(
+                    f"{result['name']} (documentacao em {result.get('path') or 'repositorio'})"
+                )
+            else:
+                rendered_items.append(
+                    f"{result['dataset_id']} (owner {result.get('owner') or 'n/a'}, "
+                    f"source {result.get('source_system') or 'n/a'})"
+                )
+        grounded_answer = "Os itens mais relevantes para essa pergunta são: " + "; ".join(rendered_items) + "."
 
     return ChatResponse(
         answer=grounded_answer,
-        sources=_build_dataset_sources(contexts),
+        sources=_build_retrieval_sources(retrieved),
     )
 
 

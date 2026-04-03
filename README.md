@@ -15,6 +15,7 @@ Hoje o projeto já entrega um MVP funcional com:
 - descoberta real de datasets e detalhes de datasets via Databricks
 - catálogo persistido de metadados ingeridos em arquivo local
 - busca semântica sobre o catálogo com embeddings
+- retrieval híbrido entre datasets e documentação operacional do repositório
 - síntese grounded opcional com LLM quando configurado
 - consultas analíticas reais da Novadrive via BigQuery Gold
 - camada de ML da Novadrive com previsão diária de faturamento por concessionária via BigQuery ML
@@ -26,6 +27,21 @@ A plataforma já está utilizável de ponta a ponta para demo e validação téc
 
 Na infraestrutura `dev`, o backend e os componentes-base já estão provisionados. A solução oficial de orquestração deste projeto é o Apache Airflow local via Docker, onde a pipeline da Novadrive já foi validada ponta a ponta.
 
+### Acessos Rápidos
+
+Links principais do ambiente:
+
+- API publicada: [Cloud Run API](https://data-platform-copilot-api-914371024790.us-central1.run.app)
+- Endpoint publicado de chat: [Cloud Run Chat API](https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat)
+- Frontend demo local: [http://localhost:5173](http://localhost:5173)
+- Frontend demo local alternativo: [http://localhost:4173](http://localhost:4173)
+- API local: [http://127.0.0.1:8000/api/v1](http://127.0.0.1:8000/api/v1)
+- Chat local via API: [http://127.0.0.1:8000/api/v1/chat](http://127.0.0.1:8000/api/v1/chat)
+- Airflow local: [http://localhost:8081](http://localhost:8081)
+- Grafana local: [http://localhost:3000](http://localhost:3000)
+- Prometheus local: [http://localhost:9090](http://localhost:9090)
+- cAdvisor local: [http://localhost:8083](http://localhost:8083)
+
 ### Backend
 
 - `GET /api/v1/health`
@@ -36,6 +52,7 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - `GET /api/v1/jobs/{job_id}/incidents`
 - `GET /api/v1/lineage/{dataset_id}`
 - `GET /api/v1/novadrive/faturamento/concessionarias`
+- `GET /api/v1/novadrive/faturamento/comparativo`
 - `GET /api/v1/novadrive/faturamento/resumo`
 - `GET /api/v1/novadrive/performance/vendedores`
 - `GET /api/v1/novadrive/previsoes/faturamento`
@@ -52,12 +69,15 @@ Na infraestrutura `dev`, o backend e os componentes-base já estão provisionado
 - endpoints reais de faturamento por concessionária e performance de vendedores
 - endpoint real de resumo consolidado de faturamento da Novadrive
 - endpoint real de previsão de faturamento por concessionária com materialização no BigQuery
+- endpoint real de comparativo histórico de faturamento da Novadrive
 - chat respondendo perguntas sobre indicadores da Novadrive, incluindo faturamento atual/total e previsão
+- chat respondendo perguntas históricas e comparativas, como última semana vs semana anterior
 - chat respondendo perguntas sobre datasets explícitos como `samples.tpch.orders`
 - chat respondendo owner e colunas de datasets reais, incluindo tabelas BigQuery da Novadrive
 - chat respondendo perguntas mais amplas sobre o ambiente, incluindo consultas por owner
+- chat recuperando também documentação operacional e runbooks do repositório
 - catálogo persistido em `pipelines/metadata/state/`
-- endpoint de busca semântica sobre datasets catalogados
+- endpoint de busca semântica sobre datasets catalogados e documentos
 
 ### O que ainda usa fallback
 
@@ -309,6 +329,7 @@ URLs locais:
 - Grafana: [http://localhost:3000](http://localhost:3000)
 - Prometheus: [http://localhost:9090](http://localhost:9090)
 - cAdvisor: [http://localhost:8083](http://localhost:8083)
+- Chat da API local: [http://127.0.0.1:8000/api/v1/chat](http://127.0.0.1:8000/api/v1/chat)
 
 Dashboards provisionados:
 
@@ -337,6 +358,14 @@ Documentação detalhada:
 
 - [orchestration/observability/README.md](/Users/leandrosantos/Downloads/data-platform-copilot/orchestration/observability/README.md)
 
+Screenshots dos dashboards:
+
+Visão Executiva da Novadrive:
+![Visão Executiva da Novadrive](/Users/leandrosantos/Downloads/data-platform-copilot/docs/images/grafana-novadrive-executive-overview.png)
+
+Qualidade de Dados e Pipeline da Novadrive:
+![Qualidade de Dados e Pipeline da Novadrive](/Users/leandrosantos/Downloads/data-platform-copilot/docs/images/grafana-novadrive-data-quality-pipeline.png)
+
 ## Rodando o Backend com Metadados Reais do Databricks
 
 Para usar metadados reais localmente:
@@ -362,6 +391,13 @@ curl http://127.0.0.1:8000/api/v1/chat \
 
 Existe um frontend demo em React + Vite em [web/](/Users/leandrosantos/Downloads/data-platform-copilot/web).
 
+Links úteis do demo:
+
+- frontend local padrão: [http://localhost:5173](http://localhost:5173)
+- frontend local forçado em `4173`: [http://localhost:4173](http://localhost:4173)
+- API publicada consumida no modo público: [Cloud Run API](https://data-platform-copilot-api-914371024790.us-central1.run.app)
+- endpoint publicado do chat: [Cloud Run Chat API](https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat)
+
 Hoje o frontend suporta:
 
 - envio de perguntas no chat
@@ -370,9 +406,12 @@ Hoje o frontend suporta:
 - detalhe do dataset com colunas reais
 - painel de jobs
 - busca semântica no catálogo persistido
+- busca semântica híbrida entre datasets e documentação operacional
 - visualização indireta dos indicadores da Novadrive via chat e endpoints da API
 - card de destaque para dataset principal
 - uso do backend local via `VITE_API_BASE_URL` para validar novas features antes do deploy
+- badge visual indicando se o demo está em modo local ou público
+- pergunta exemplo para comparação histórica da Novadrive
 
 Para rodar localmente:
 
@@ -525,6 +564,13 @@ Arquivos principais:
 - [app/api/routes/metadata.py](/Users/leandrosantos/Downloads/data-platform-copilot/app/api/routes/metadata.py)
 - [pipelines/metadata/sync_metadata_catalog.py](/Users/leandrosantos/Downloads/data-platform-copilot/pipelines/metadata/sync_metadata_catalog.py)
 
+Hoje essa camada cobre:
+
+- catálogo persistido de datasets e documentos operacionais
+- embeddings para retrieval semântico
+- retrieval híbrido entre metadados e documentação do repositório
+- síntese grounded opcional com LLM
+
 ## Camada de ML da Novadrive
 
 O projeto agora inclui um MVP de ML orientado a previsão de faturamento:
@@ -558,6 +604,7 @@ curl "https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/jobs
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/lineage/main.sales.orders
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/concessionarias
+curl "https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/comparativo?days=7"
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/faturamento/resumo
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/performance/vendedores
 curl "https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/novadrive/previsoes/faturamento?limit=10&days_ahead=7"
@@ -582,6 +629,9 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
   -d '{"question":"Qual faturamento atual da Novadrive?"}'
 curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
   -H "Content-Type: application/json" \
+  -d '{"question":"Compare o faturamento da Novadrive entre a última semana e a semana anterior"}'
+curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/chat \
+  -H "Content-Type: application/json" \
   -d '{"question":"Quais datasets pertencem ao owner sales-platform?"}'
 ```
 
@@ -600,6 +650,7 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - dashboard de qualidade e pipeline da Novadrive com freshness, duplicidade e snapshots diários
 - persistência do catálogo de metadados fora das chamadas diretas da API
 - busca semântica com embeddings e endpoint dedicado de search
+- retrieval híbrido com documentação operacional e runbooks do repositório
 - integração opcional com LLM para síntese grounded de respostas
 - módulos Terraform e ambiente `dev` no GCP
 - deploy da API no Cloud Run
@@ -607,25 +658,21 @@ curl https://data-platform-copilot-api-914371024790.us-central1.run.app/api/v1/c
 - frontend demo em React conectado ao backend real
 - frontend demo preparado para publicação em GitHub Pages
 - melhoria do chat para resolver datasets explícitos, responder colunas e consultar datasets por owner
-- melhoria do chat para responder perguntas sobre indicadores da Novadrive, faturamento atual/total e previsão
+- melhoria do chat para responder perguntas sobre indicadores da Novadrive, faturamento atual/total, previsão e comparativos históricos
 - fallback de metadados do BigQuery para dataset detail e schema da Novadrive
 - correção da modelagem silver para deduplicação antes da construção da gold
 - suporte local a CORS para desenvolvimento com Vite
 - MVP de ML em BigQuery ML com treinamento e serving de previsões pela API
+- modo público e modo local explicitados no frontend demo
 
 ## Estado Atual do Projeto
 
 Hoje o projeto já cobre:
 
 - plataforma de dados medalhão para a Novadrive com ingestão, silver, gold e ML
-- copiloto com catálogo persistido, retrieval semântico, perguntas por owner e síntese grounded opcional
-- chat respondendo metadados, indicadores analíticos, faturamento consolidado e previsão
+- copiloto com catálogo persistido, retrieval híbrido, perguntas por owner e síntese grounded opcional
+- chat respondendo metadados, documentação operacional, indicadores analíticos, faturamento consolidado, previsão e comparativos históricos
 - orquestração oficial em Apache Airflow local via Docker
 - observabilidade local com Prometheus e Grafana
 - frontend demo local em React conectado ao backend real ou ao backend local
-
-Os próximos incrementos mais naturais passam a ser refinamentos de produto, como:
-
-- retrieval híbrido com documentação operacional e runbooks
-- perguntas históricas e comparativas mais amplas no chat
-- publicação final do frontend demo em ambiente público, se desejado
+- frontend demo preparado para publicação estática com GitHub Pages usando o backend publicado no Cloud Run

@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Query
 
 from app.api.schemas.novadrive import (
+    ComparativoFaturamentoNovadriveResponse,
     FaturamentoConcessionariaResponse,
     PrevisaoFaturamentoResponse,
     PerformanceVendedorResponse,
     ResumoFaturamentoNovadriveResponse,
 )
 from app.api.services.novadrive_service import (
+    get_comparativo_faturamento_novadrive,
     get_resumo_faturamento_novadrive,
     list_faturamento_por_concessionaria,
     list_previsao_faturamento,
@@ -22,6 +24,16 @@ router = APIRouter()
 )
 def faturamento_resumo() -> ResumoFaturamentoNovadriveResponse:
     return get_resumo_faturamento_novadrive()
+
+
+@router.get(
+    "/novadrive/faturamento/comparativo",
+    response_model=ComparativoFaturamentoNovadriveResponse,
+)
+def faturamento_comparativo(
+    days: int = Query(default=7, ge=1, le=90),
+) -> ComparativoFaturamentoNovadriveResponse:
+    return get_comparativo_faturamento_novadrive(days)
 
 
 @router.get(

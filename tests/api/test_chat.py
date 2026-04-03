@@ -9,6 +9,7 @@ from app.api.main import app
 from app.api.schemas.datasets import DatasetColumn, DatasetDetailResponse
 from app.api.schemas.lineage import LineageResponse
 from app.api.schemas.novadrive import (
+    ComparativoFaturamentoNovadriveResponse,
     FaturamentoConcessionariaItem,
     FaturamentoConcessionariaResponse,
     PrevisaoFaturamentoItem,
@@ -452,6 +453,37 @@ def test_chat_answers_novadrive_forecast_question(monkeypatch) -> None:
     assert payload["sources"][0]["id"] == "previsao_faturamento_concessionarias"
 
 
+def test_chat_answers_novadrive_comparative_question(monkeypatch) -> None:
+    monkeypatch.setattr(
+        chat_service,
+        "get_comparativo_faturamento_novadrive",
+        lambda days: ComparativoFaturamentoNovadriveResponse(
+            dias=days,
+            periodo_atual_inicio="2026-03-27",
+            periodo_atual_fim="2026-04-02",
+            periodo_anterior_inicio="2026-03-20",
+            periodo_anterior_fim="2026-03-26",
+            faturamento_periodo_atual=12000000.0,
+            faturamento_periodo_anterior=10000000.0,
+            vendas_periodo_atual=42,
+            vendas_periodo_anterior=37,
+            variacao_percentual=20.0,
+        ),
+    )
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Compare o faturamento da Novadrive na ultima semana com a semana anterior"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "Nos ultimos 7 dias" in payload["answer"]
+    assert "R$ 12.000.000,00" in payload["answer"]
+    assert "crescimento de 20,00%" in payload["answer"]
+    assert payload["sources"][0]["id"] == "faturamento_comparativo"
+
+
 def test_chat_returns_fallback_when_context_is_missing(monkeypatch) -> None:
     monkeypatch.setattr(chat_service, "list_dataset_records", lambda: [])
     monkeypatch.setattr(chat_service, "search_catalog", lambda question: [])
@@ -475,10 +507,15 @@ def test_chat_answers_semantic_environment_question(monkeypatch) -> None:
         "search_catalog",
         lambda question: [
             {
+                "item_id": "main.finance.invoices",
+                "item_type": "dataset",
                 "dataset_id": "main.finance.invoices",
                 "name": "main.finance.invoices",
                 "score": 0.91,
-                "dataset": {
+                "owner": "finance-data",
+                "source_system": "mock",
+                "context": {
+                    "item_type": "dataset",
                     "dataset_id": "main.finance.invoices",
                     "owner": "finance-data",
                     "description": "Invoice dataset for finance reconciliation.",
@@ -499,3 +536,40 @@ def test_chat_answers_semantic_environment_question(monkeypatch) -> None:
     payload = response.json()
     assert "main.finance.invoices" in payload["answer"]
     assert payload["sources"][0]["id"] == "main.finance.invoices"
+
+
+def test_chat_answers_semantic_document_question(monkeypatch) -> None:
+    monkeypatch.setattr(chat_service, "list_dataset_records", lambda: [])
+    monkeypatch.setattr(
+        chat_service,
+        "search_catalog",
+        lambda question: [
+            {
+                "item_id": "document:orchestration/observability/README.md",
+                "item_type": "document",
+                "dataset_id": None,
+                "name": "Observabilidade",
+                "score": 0.93,
+                "path": "orchestration/observability/README.md",
+                "context": {
+                    "item_type": "document",
+                    "item_id": "document:orchestration/observability/README.md",
+                    "name": "Observabilidade",
+                    "description": "Runbook de Grafana e Prometheus.",
+                    "path": "orchestration/observability/README.md",
+                    "source_system": "repo-docs",
+                },
+            }
+        ],
+    )
+    monkeypatch.setattr(chat_service, "synthesize_grounded_answer", lambda question, contexts: None)
+
+    response = client.post(
+        "/api/v1/chat",
+        json={"question": "Existe documentacao do runbook de observabilidade?"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "Observabilidade" in payload["answer"]
+    assert payload["sources"][0]["type"] == "document"

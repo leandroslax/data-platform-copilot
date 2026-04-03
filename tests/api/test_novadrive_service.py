@@ -44,6 +44,31 @@ def test_get_resumo_faturamento_novadrive(monkeypatch) -> None:
     assert response.ticket_medio == 125814.92
 
 
+def test_get_comparativo_faturamento_novadrive(monkeypatch) -> None:
+    monkeypatch.setattr(
+        novadrive_service,
+        "get_comparativo_faturamento_record",
+        lambda days: {
+            "dias": days,
+            "periodo_atual_inicio": "2026-03-27",
+            "periodo_atual_fim": "2026-04-02",
+            "periodo_anterior_inicio": "2026-03-20",
+            "periodo_anterior_fim": "2026-03-26",
+            "faturamento_periodo_atual": 12000000.0,
+            "faturamento_periodo_anterior": 10000000.0,
+            "vendas_periodo_atual": 42,
+            "vendas_periodo_anterior": 37,
+            "variacao_percentual": 20.0,
+        },
+    )
+
+    response = novadrive_service.get_comparativo_faturamento_novadrive(7)
+
+    assert response.dias == 7
+    assert response.faturamento_periodo_atual == 12000000.0
+    assert response.variacao_percentual == 20.0
+
+
 def test_list_performance_vendedores(monkeypatch) -> None:
     monkeypatch.setattr(
         novadrive_service,

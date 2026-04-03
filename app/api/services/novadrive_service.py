@@ -1,10 +1,12 @@
 from app.api.repositories.novadrive_repository import (
+    get_comparativo_faturamento_novadrive as get_comparativo_faturamento_record,
     get_resumo_faturamento_novadrive as get_resumo_faturamento_record,
     list_faturamento_por_concessionaria as list_faturamento_records,
     list_previsao_faturamento as list_previsao_records,
     list_performance_vendedores as list_performance_records,
 )
 from app.api.schemas.novadrive import (
+    ComparativoFaturamentoNovadriveResponse,
     FaturamentoConcessionariaItem,
     FaturamentoConcessionariaResponse,
     PrevisaoFaturamentoItem,
@@ -13,6 +15,23 @@ from app.api.schemas.novadrive import (
     PerformanceVendedorResponse,
     ResumoFaturamentoNovadriveResponse,
 )
+
+
+def get_comparativo_faturamento_novadrive(days: int) -> ComparativoFaturamentoNovadriveResponse:
+    record = get_comparativo_faturamento_record(days)
+
+    return ComparativoFaturamentoNovadriveResponse(
+        dias=int(record.get("dias") or days),
+        periodo_atual_inicio=record.get("periodo_atual_inicio") or "",
+        periodo_atual_fim=record.get("periodo_atual_fim") or "",
+        periodo_anterior_inicio=record.get("periodo_anterior_inicio") or "",
+        periodo_anterior_fim=record.get("periodo_anterior_fim") or "",
+        faturamento_periodo_atual=float(record.get("faturamento_periodo_atual") or 0.0),
+        faturamento_periodo_anterior=float(record.get("faturamento_periodo_anterior") or 0.0),
+        vendas_periodo_atual=int(record.get("vendas_periodo_atual") or 0),
+        vendas_periodo_anterior=int(record.get("vendas_periodo_anterior") or 0),
+        variacao_percentual=float(record.get("variacao_percentual") or 0.0),
+    )
 
 
 def get_resumo_faturamento_novadrive() -> ResumoFaturamentoNovadriveResponse:

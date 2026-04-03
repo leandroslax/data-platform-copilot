@@ -18,11 +18,14 @@ def test_search_route_returns_semantic_results(monkeypatch) -> None:
         "search_catalog",
         lambda query, limit: [
             {
+                "item_id": "main.sales.orders",
+                "item_type": "dataset",
                 "dataset_id": "main.sales.orders",
                 "name": "main.sales.orders",
                 "owner": "sales-platform",
                 "description": "Orders",
                 "source_system": "mock",
+                "path": None,
                 "score": 0.92,
             }
         ],
@@ -33,6 +36,7 @@ def test_search_route_returns_semantic_results(monkeypatch) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["total"] == 1
+    assert payload["items"][0]["item_type"] == "dataset"
     assert payload["items"][0]["dataset_id"] == "main.sales.orders"
 
 
@@ -42,6 +46,7 @@ def test_metadata_sync_route_returns_paths(monkeypatch) -> None:
         "refresh_metadata_catalog",
         lambda: {
             "dataset_count": 3,
+            "document_count": 2,
             "generated_at": "2026-04-02T23:00:00Z",
             "snapshot_path": "pipelines/metadata/state/catalog_snapshot.json",
             "embedding_index_path": "pipelines/metadata/state/catalog_embeddings.json",
@@ -53,4 +58,32 @@ def test_metadata_sync_route_returns_paths(monkeypatch) -> None:
     assert response.status_code == 200
     payload = response.json()
     assert payload["dataset_count"] == 3
+    assert payload["document_count"] == 2
     assert payload["snapshot_path"].endswith("catalog_snapshot.json")
+
+
+def test_search_route_returns_documents(monkeypatch) -> None:
+    monkeypatch.setattr(
+        search_route,
+        "search_catalog",
+        lambda query, limit: [
+            {
+                "item_id": "document:README.md",
+                "item_type": "document",
+                "dataset_id": None,
+                "name": "README",
+                "owner": None,
+                "description": "Operational overview",
+                "source_system": "repo-docs",
+                "path": "README.md",
+                "score": 0.88,
+            }
+        ],
+    )
+
+    response = client.get("/api/v1/search", params={"q": "runbook"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"][0]["item_type"] == "document"
+    assert payload["items"][0]["path"] == "README.md"
